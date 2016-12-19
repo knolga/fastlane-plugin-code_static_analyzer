@@ -38,6 +38,8 @@ module Fastlane
   			 Actions.lane_context[SharedValues::ANALYZER_STATUS] = 1
   			#exit 1
 		end
+       	UI.important 'run from'
+       	UI.error File.dirname(__FILE__)
  #Actions.lane_context[SharedValues::ANALYZER_STATUS] = 0
       end
       
