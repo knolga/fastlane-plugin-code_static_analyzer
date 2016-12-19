@@ -1,31 +1,23 @@
 module Fastlane
   module Actions
-    module SharedValues
-      ANALYZER_STATUS = :ANALYZER_STATUS
-    end
-    
     class CodeStaticAnalyzerAction < Action
-      SRCROOT = './artifacts/'
+    #  SRCROOT = './artifacts/'
+      status_static=''
       
       def self.run(params)
-       # UI.message("The code_static_analyzer plugin is working!")
-        #"The code_static_analyzer plugin is working! Coloured" #.light_blue
-       # Fastlane::Actions::JunitParserAction#(text: "Please input your password:")
-       # Actions::JunitParserAction.run(api_token: 'ASD-23-F', development: true)
-        
-       # Actions::FormatterAction.run(api_token: 'myTest-script')
-       #  UI.message("end!")
-       
-       ##===================================================##
-       
+       	UI.important 'run from local'
+       	UI.error params[:root]
+
+       	
        	junit_xml = ''
 		
-		clear_files = "#{SRCROOT}*.*"
+		clear_files = "#{params[:root]}*.*"
 		sh "rm -rf #{clear_files}"
-		xml_content = Actions::CodeStaticAnalyzerAction.CPD_analyzer
 		
-		# add block of one static analys results
-        #junit_xml += xml_content #Parser.add_testsuite('1', 'copypaste', xml_content)
+		# CPD Parser
+
+		xml_content = Actions::CodeStaticAnalyzerAction.CPD_analyzer("#{params[:root]}copypaste.xml",100,'.','objectivec',['./Pods', './ThirdParty/'])
+        junit_xml += Actions::JunitParserAction.add_testsuite('1', 'copypaste', xml_content)
         
         if Actions::CodeStaticAnalyzerAction.status_to_boolean(xml_content) #&& status_static
    			#status_to_boolean(status_cpd) &&
@@ -40,32 +32,33 @@ module Fastlane
 		end
        	UI.important 'run from'
        	UI.error File.dirname(__FILE__)
+        
+        
+        # create full file with results
+		Actions::JunitParserAction.create_code_analysis_junit_xml(junit_xml, "#{params[:root]}codeAnalysResults")
  #Actions.lane_context[SharedValues::ANALYZER_STATUS] = 0
       end
       
-      def self.CPD_analyzer
-        xml_content = ''
-      UI.header('Run copy-paste detector')
-        run_script = 'bundle exec ./cpd_code_analys.sh'
-   #  run_script =   "pmd cpd "\
-	#"--minimum-tokens 100 "\
- 	#"--files . "\
- 	#"--language objectivec "\
- 	#"--exclude ./Pods ./ThirdParty/ "\
- 	#"--format xml > '#{SRCROOT}copypaste.xml'"
-        Actions::FormatterAction.cpd_format('100','objective c','./Pods ./ThirdParty/',"#{SRCROOT}copypaste.xml")
-
-        FastlaneCore::CommandExecutor.execute(command: "#{run_script}",
-                                    print_all: false,
-                                        error: proc do |error_output|
-                                          # handle error here
-                                        end)
-        status_cpd = $?.exitstatus
-       
-       # xml_content =
-       # Parser.parse_xml_to_xml('copypaste.xml', 'copypaste')
-       # Formatter.return_status(status_cpd)
-         status_cpd
+      def self.CPD_analyzer(filepathname, tokens, files, lan, files_to_exclude)
+        UI.header('Run copy-paste detector')
+        exclude_files = ''
+        files_to_exclude.each do |exclude|
+          exclude_files += "#{exclude} "
+        end
+       run_script = "pmd cpd "\
+	 				"--minimum-tokens #{tokens} "\
+ 					"--files #{files} "\
+ 					"--language #{lan} "\
+ 					"--exclude #{exclude_files}"\
+ 					"--format xml > '#{filepathname}'"
+       Actions::FormatterAction.cpd_format(tokens,lan,files_to_exclude,filepathname)
+       FastlaneCore::CommandExecutor.execute(command: "#{run_script}",
+                                   print_all: false,
+                                       error: proc do |error_output|
+                                         # handle error here
+                                       end)
+       status_cpd = $?.exitstatus
+       Actions::JunitParserAction.parse_xml_to_xml( filepathname)
       end
       
       def self.status_to_boolean(var)
@@ -96,11 +89,11 @@ module Fastlane
 
       def self.available_options
         [
-          # FastlaneCore::ConfigItem.new(key: :root,
-          #                         env_name: "SRCROOT",
-          #                      description: "A description of your option",
-          #                         optional: false,
-          #                             type: String)
+           FastlaneCore::ConfigItem.new(key: :root,
+                                   env_name: "CSA_SRCROOT",
+                                description: "A description of your option",
+                                   optional: false,
+                                       type: String)
         ]
       end
 
