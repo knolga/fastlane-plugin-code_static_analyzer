@@ -47,12 +47,12 @@ module Fastlane
         xml_content = ''
       UI.header('Run copy-paste detector')
         run_script = 'bundle exec ./cpd_code_analys.sh'
-     run_script =   "pmd cpd "\
-	"--minimum-tokens 100 "\
- 	"--files . "\
- 	"--language objectivec "\
- 	"--exclude ./Pods ./ThirdParty/ "\
- 	"--format xml > '#{SRCROOT}copypaste.xml'"
+   #  run_script =   "pmd cpd "\
+	#"--minimum-tokens 100 "\
+ 	#"--files . "\
+ 	#"--language objectivec "\
+ 	#"--exclude ./Pods ./ThirdParty/ "\
+ 	#"--format xml > '#{SRCROOT}copypaste.xml'"
         Actions::FormatterAction.cpd_format('100','objective c','./Pods ./ThirdParty/',"#{SRCROOT}copypaste.xml")
 
         FastlaneCore::CommandExecutor.execute(command: "#{run_script}",
