@@ -1,3 +1,5 @@
+require 'crack'
+
 module Fastlane
   module Actions
     module SharedValues
@@ -6,8 +8,6 @@ module Fastlane
 
     class JunitParserAction < Action
     
-    require 'crack'
-      
       def self.run(params)
       puts params
         # fastlane will take care of reading in the parameter and fetching the environment variable:
@@ -36,7 +36,8 @@ module Fastlane
       def self.create_xml2(xml_data_custom, result_file_name)
         xml_data = '<?xml version="1.0" encoding="UTF-8"?>'
         xml_data += xml_data_custom
-        File.open("#{result_file_name}.xml", 'w') do |f|
+        UI.success "write to file: #{result_file_name}"
+        File.open(result_file_name, 'w') do |f|
           f.write(xml_data)
         end
       end

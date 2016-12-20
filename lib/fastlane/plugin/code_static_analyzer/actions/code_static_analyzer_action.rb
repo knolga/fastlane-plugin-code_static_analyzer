@@ -1,8 +1,6 @@
 module Fastlane
   module Actions
     class CodeStaticAnalyzerAction < Action
-    #  SRCROOT = './artifacts/'
-      status_static=''
       
       def self.run(params)
        	UI.important 'run from local'
@@ -13,12 +11,17 @@ module Fastlane
 		UI.important "cpd_files_to_exclude -> #{params[:cpd_files_to_exclude]}"
        	UI.important "language -> #{params[:language]}"
        	
-       status_cpd = Actions::CpdAnalyzerAction.run(dir: params[:root],
+       	clear_files = "#{params[:root]}/params[:result]/*.*"
+		sh "rm -rf #{clear_files}"
+				
+  		# CPD Parser
+        status_cpd = Actions::CpdAnalyzerAction.run(work_dir: params[:root],
+      											 result_dir: params[:result],
        												tokens:	params[:tokens],
        												files_to_inspect:	params[:cpd_files], 
        												language:	params[:language],
        												files_to_exclude:	params[:cpd_files_to_exclude])
- UI.error "result=#{status_cpd}"
+ 
        	params[:analyzers].each do |analyzer|
           case analyzer
   			when 'xcodeWar' 
@@ -29,21 +32,7 @@ module Fastlane
     	  	  UI.success 'create rubocop analyzer testsuite'
   			end
         end
-  #     	junit_xml = ''
-#		
-#		clear_files = "#{params[:root]}*.*"
-#		sh "rm -rf #{clear_files}"
-#		
-#		# CPD Parser
-#
-#		xml_content = Actions::CodeStaticAnalyzerAction.CPD_analyzer("#{params[:root]}copypaste.xml",100,'.','objectivec',['./Pods', './ThirdParty/'])
-  #      junit_xml += Actions::JunitParserAction.add_testsuite('1', 'copypaste', xml_content)
-  #      
-  #      
-  #      
-  #      # create full file with results
-#		Actions::JunitParserAction.create_code_analysis_junit_xml(junit_xml, "#{params[:root]}codeAnalysResults")
-#
+
 #        if  Actions::CodeStaticAnalyzerAction.status_to_boolean(status_cpd) #&& status_static
 #   			#status_to_boolean(status_cpd) &&
 #   #status_to_boolean(status_rubocop)
@@ -53,6 +42,8 @@ module Fastlane
 #  			UI.error 'Failed. New builds deprecated. Warnings (see more in *.xml files) OLGA test'
 #  			exit 1
 #		end
+
+##TODO: delete files *temp*.xml
  #Actions.lane_context[SharedValues::ANALYZER_STATUS] = 0
       end
       
@@ -91,11 +82,16 @@ module Fastlane
                                        	type: Array,
                               			default_value: ["rubocop","xcodeWar"]),
             FastlaneCore::ConfigItem.new(key: :root,  #insert check block if path exist and string ends by /
-                        				env_name: "CSA_RESULT_DIR",
-                     					description: "Path to result directory",
+                        				env_name: "CSA_PROJECT_DIR",
+                     					description: "Path to project/work directory. In this dir will be founded all files for analysis and created results dir",
+                        				optional: false,
+                            			type: String),    
+        FastlaneCore::ConfigItem.new(key: :result,  #insert check block if path exist and string ends by /
+                        				env_name: "CSA_RESULT_DIR_NAME",
+                     					description: "???",
                         				optional: true,
                             			type: String,
-                   						default_value: './artifacts/'),    
+                            			default_value:'artifacts'),    
 			FastlaneCore::ConfigItem.new(key: :tokens,
                         				#env_name: "CSA_CPD_TOKENS",
                      					description: "The min number of words in code that is detected as copy paste",
@@ -105,12 +101,12 @@ module Fastlane
 			FastlaneCore::ConfigItem.new(key: :cpd_files, 
                         				#env_name: "CSA_CPD_FILES_TO_INSPECT",
                      					description: "Path to dir/file to be inspected on copy paste",
-                        				optional: false,
-                            			type: String),
+                        				optional: true,
+                            			type: Array),
 			FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude, 
                                    		#env_name: "CSA_CPD_FILES_NOT_TO_INSPECT",
                                 		description: "Path to dir/file not to be inspected on copy paste",
-                                   		optional: false,
+                                   		optional: true,
                                        	type: Array),
             FastlaneCore::ConfigItem.new(key: :language, 
                                    		#env_name: "CSA_CPD_FILE_LANGUAGE",
