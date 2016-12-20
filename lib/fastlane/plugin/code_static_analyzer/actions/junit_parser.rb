@@ -114,8 +114,53 @@ module Fastlane
         create_xml2(full_data, result_file_name)
       end
   
+  	  #####################################################
+      # ============== Rubocop-json Parser ================
       #####################################################
-      # ==================== Parser 3 =====================
+      
+      def self.parse_json_to_xml(file)
+        data_read = File.read(file)
+        data_hash = Crack::JSON.parse(data_read)
+    
+        keys = data_hash['metadata'].keys.zip(data_hash['summary'].keys).flatten.compact
+        values = data_hash['metadata'].values.zip(data_hash['summary'].values).flatten.compact
+        properties = add_properties(keys, values)
+    
+        testcase = Actions::JunitParserAction.parse_main_json_to_xml(data_hash)
+    
+        properties + testcase
+      end
+    
+      # create main xml content
+      def self.parse_main_json_to_xml(data_hash)
+        xml = ''
+        data_hash['files'].each do |inspected_file|
+          error_text = ''
+          errors = inspected_file['offenses']
+          if errors.empty?
+            xml += Actions::JunitParserAction.add_success_testcase('id', (inspected_file['path']).to_s)
+          else
+            errors.each do |error|
+              error_text += Actions::JunitParserAction.construct_failure_mes(
+                ['Error isCorrected', 'Error ClassType', 'Error Line', 'Error Message'],
+                [error['corrected'], "#{error['cop_name']} (#{error['severity']})",
+                 Actions::JunitParserAction.parse_location(error['location']), error['message'].tr("\n", '')]
+              )
+            end
+            # TODO: corrected:6 failded:0 (if needed this info)
+            failures = Actions::JunitParserAction.add_failure('lineformat=line:column:length', '', error_text)
+            xml += Actions::JunitParserAction.add_failed_testcase('id', (inspected_file['path']).to_s, failures)
+          end
+        end
+        xml
+      end
+    
+      def self.parse_location(location)
+        "#{location['line']}:#{location['column']}:#{location['length']}"
+      end
+      
+      #####################################################
+      # ================= CPD-xml Parser ==================
       #####################################################
 
       def self.parse_xml_to_xml(file)

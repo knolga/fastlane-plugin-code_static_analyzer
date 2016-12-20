@@ -15,13 +15,13 @@ module Fastlane
 		sh "rm -rf #{clear_files}"
 				
   		# CPD Parser
-        status_cpd = Actions::CpdAnalyzerAction.run(work_dir: params[:root],
-      											 result_dir: params[:result],
-       												tokens:	params[:tokens],
-       												files_to_inspect:	params[:cpd_files], 
-       												language:	params[:language],
-       												files_to_exclude:	params[:cpd_files_to_exclude])
- 
+     #   status_cpd = Actions::CpdAnalyzerAction.run(work_dir: params[:root],
+     # 											 result_dir: params[:result],
+     #  												tokens:	params[:tokens],
+     #  												files_to_inspect:	params[:cpd_files], 
+     #  												language:	params[:language],
+     #  												files_to_exclude:	params[:cpd_files_to_exclude])
+ status_rubocop=''
        	params[:analyzers].each do |analyzer|
           case analyzer
   			when 'xcodeWar' 
@@ -29,10 +29,12 @@ module Fastlane
     	  	  UI.success 'create xcode analyzer testsuite'
   			when 'rubocop' 
     	  	  UI.success 'run rubocop analyzer'
-    	  	  UI.success 'create rubocop analyzer testsuite'
+    	  	  status_rubocop = Actions::RubyAnalyzerAction.run(work_dir: params[:root],
+      											 result_dir: params[:result],
+       												files_to_inspect:	params[:ruby_files])
   			end
         end
-
+UI.error "result = #{status_rubocop}"
 #        if  Actions::CodeStaticAnalyzerAction.status_to_boolean(status_cpd) #&& status_static
 #   			#status_to_boolean(status_cpd) &&
 #   #status_to_boolean(status_rubocop)
@@ -82,7 +84,7 @@ module Fastlane
                                        	type: Array,
                               			default_value: ["rubocop","xcodeWar"]),
             FastlaneCore::ConfigItem.new(key: :root,  #insert check block if path exist and string ends by /
-                        				env_name: "CSA_PROJECT_DIR",
+                        				env_name: "CSA_WORK_DIR",
                      					description: "Path to project/work directory. In this dir will be founded all files for analysis and created results dir",
                         				optional: false,
                             			type: String),    
@@ -91,28 +93,29 @@ module Fastlane
                      					description: "???",
                         				optional: true,
                             			type: String,
-                            			default_value:'artifacts'),    
+                            			default_value: 'artifacts'),    
 			FastlaneCore::ConfigItem.new(key: :tokens,
-                        				#env_name: "CSA_CPD_TOKENS",
                      					description: "The min number of words in code that is detected as copy paste",
                         				optional: true,
                             			type: String,
                    						default_value: '100'),
 			FastlaneCore::ConfigItem.new(key: :cpd_files, 
-                        				#env_name: "CSA_CPD_FILES_TO_INSPECT",
                      					description: "Path to dir/file to be inspected on copy paste",
                         				optional: true,
                             			type: Array),
 			FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude, 
-                                   		#env_name: "CSA_CPD_FILES_NOT_TO_INSPECT",
                                 		description: "Path to dir/file not to be inspected on copy paste",
                                    		optional: true,
                                        	type: Array),
             FastlaneCore::ConfigItem.new(key: :language, 
-                                   		#env_name: "CSA_CPD_FILE_LANGUAGE",
                                 		description: "Language used in files that will be inspected on copy paste",
                                    		optional: false,
-                                       	type: String)
+                                       	type: String),
+                                       	
+			FastlaneCore::ConfigItem.new(key: :ruby_files, 
+                     					description: "Path to ruby file to be inspected on warnings & syntax",
+                        				optional: true, #optional because this analyzer we run only if required
+                            			type: Array)
         ]
       end
 

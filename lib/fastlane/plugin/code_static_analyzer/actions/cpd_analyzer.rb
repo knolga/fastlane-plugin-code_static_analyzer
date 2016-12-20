@@ -29,7 +29,8 @@ module Fastlane
 		junit_xml = Actions::JunitParserAction.add_testsuite('', 'copypaste', xml_content)
         # create full file with results
 		Actions::JunitParserAction.create_code_analysis_junit_xml(junit_xml, result_file)
-      Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
+		
+        Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
       end
 
 	  def self.add_root_path(root, file_list, is_inspected)
@@ -61,8 +62,7 @@ module Fastlane
       def self.available_options
         # Define all options your action supports. 
         [
-			FastlaneCore::ConfigItem.new(key: :work_dir, 
-          							  	env_name: "CPD_WORK_DIR", 
+			FastlaneCore::ConfigItem.new(key: :work_dir,  
                      				  	description: "Path to work/project directory",
                         			  	optional: false,
                             		  	type: String,
@@ -71,10 +71,10 @@ module Fastlane
                                           UI.user_error!("Couldn't find file at path '#{value}'") unless File.exist?(value)
                                       	end),    
             FastlaneCore::ConfigItem.new(key: :result_dir,  
-                        				env_name: "CPD_RESULT_DIR_NAME",
                      					description: "Directory's name for storing  analysis results",
                         				optional: true,
-                            			type: String),
+                            			type: String,
+                            			default_value: 'artifacts'),
 			FastlaneCore::ConfigItem.new(key: :tokens,
                         				env_name: "CPD_TOKENS",
                      					description: "The min number of words in code that is detected as copy paste",
