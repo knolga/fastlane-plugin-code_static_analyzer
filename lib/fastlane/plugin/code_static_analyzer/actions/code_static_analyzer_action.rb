@@ -11,30 +11,33 @@ module Fastlane
 		UI.important "cpd_files_to_exclude -> #{params[:cpd_files_to_exclude]}"
        	UI.important "language -> #{params[:language]}"
        	
-       	clear_files = "#{params[:root]}/params[:result]/*.*"
+       	status_rubocop=''
+ 		status_static=''
+ 
+       	clear_files = "#{params[:root]}/#{params[:result]}/*.*"
 		sh "rm -rf #{clear_files}"
 				
   		# CPD Parser
-     #   status_cpd = Actions::CpdAnalyzerAction.run(work_dir: params[:root],
-     # 											 result_dir: params[:result],
-     #  												tokens:	params[:tokens],
-     #  												files_to_inspect:	params[:cpd_files], 
-     #  												language:	params[:language],
-     #  												files_to_exclude:	params[:cpd_files_to_exclude])
- status_rubocop=''
+        status_cpd = Actions::CpdAnalyzerAction.run(work_dir: params[:root],
+      											 result_dir: params[:result],
+       												tokens:	params[:tokens],
+       												files_to_inspect:	params[:cpd_files], 
+       												language:	params[:language],
+       												files_to_exclude:	params[:cpd_files_to_exclude])
+ 
        	params[:analyzers].each do |analyzer|
           case analyzer
   			when 'xcodeWar' 
-    	  	  UI.success 'run xcode analyzer'
-    	  	  UI.success 'create xcode analyzer testsuite'
+    	  	  status_static = Actions::WarningAnalyzerAction.run(work_dir: params[:root],
+      											 				result_dir: params[:result],
+       															work_name:	params[:xcode_project])
   			when 'rubocop' 
-    	  	  UI.success 'run rubocop analyzer'
     	  	  status_rubocop = Actions::RubyAnalyzerAction.run(work_dir: params[:root],
-      											 result_dir: params[:result],
-       												files_to_inspect:	params[:ruby_files])
+      											 			result_dir: params[:result],
+       														files_to_inspect:	params[:ruby_files])
   			end
         end
-UI.error "result = #{status_rubocop}"
+
 #        if  Actions::CodeStaticAnalyzerAction.status_to_boolean(status_cpd) #&& status_static
 #   			#status_to_boolean(status_cpd) &&
 #   #status_to_boolean(status_rubocop)
@@ -115,7 +118,12 @@ UI.error "result = #{status_rubocop}"
 			FastlaneCore::ConfigItem.new(key: :ruby_files, 
                      					description: "Path to ruby file to be inspected on warnings & syntax",
                         				optional: true, #optional because this analyzer we run only if required
-                            			type: Array)
+                            			type: Array),
+                            			
+            FastlaneCore::ConfigItem.new(key: :xcode_project,
+                                       description: "Xcode project name with extention *.xcodeproj in work directory", 
+                                       optional: true, #optional because this analyzer we run only if required
+                            		   type: String)
         ]
       end
 

@@ -10,9 +10,7 @@ module Fastlane
         temp_result_file = "#{params[:work_dir]}/#{params[:result_dir]}/temp_ruby.json"
         result_file = "#{params[:work_dir]}/#{params[:result_dir]}/codeAnalysResults_ruby.xml"
      	files = Actions::CpdAnalyzerAction.add_root_path(params[:work_dir], params[:files_to_inspect], true) 
-
 		run_script = "bundle exec rubocop -f j #{files} > #{temp_result_file}" 
-    	UI.success run_script
 
     	FastlaneCore::CommandExecutor.execute(command: "#{run_script}",
                                			     print_all: false,

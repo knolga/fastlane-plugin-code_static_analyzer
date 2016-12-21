@@ -1,42 +1,37 @@
 module Fastlane
   module Actions
-    module SharedValues
-      FORMATTER_CUSTOM_VALUE = :FORMATTER_CUSTOM_VALUE
-    end
+   # module SharedValues
+   #   FORMATTER_CUSTOM_VALUE = :FORMATTER_CUSTOM_VALUE
+   # end
 
     class FormatterAction < Action
       def self.run(params)
         # fastlane will take care of reading in the parameter and fetching the environment variable:
         UI.message "Formatter"
-№project = UI.select("Select your project: ", ["Test Project", "Test Workspace"])
-
-        # sh "shellcommand ./path"
-
-        # Actions.lane_context[SharedValues::FORMATTER_CUSTOM_VALUE] = "my_val"
       end
 
-def self.return_status(mystatus)
-    UI.message ">>> Exit command status: #{mystatus}"
-  end
-
-  def self.xcode_format(scheme)
-    UI.message '-----------------------------------------------'
-    UI.message ">>> Running Xcode analyze command... on #{scheme}..."
-  end
-
-  def self.cpd_format(tokens, language, files_to_exclude, file)
-    UI.message '-----------------------------------------------'
-    UI.message "min_tokens    : #{tokens}"
-    UI.message "language      : #{language}"
-    UI.message "exclude_files : #{files_to_exclude}"
-    UI.message 'format        : xml'
-    UI.message "output_file   : #{file}"
-    UI.message '-----------------------------------------------'
-  end
-
-  def self.prepare_xml
-    UI.message '>>> Preparing result xml file...'
-  end
+      def self.return_status(mystatus)
+        UI.message Actions::FormatterAction.light_blue(">>> Exit command status: #{mystatus}")
+  	  end
+		
+  	  def self.xcode_format(scheme)
+  		UI.message ">>> Running Xcode analyze command... on #{scheme}..."
+  	  end
+		
+  	  def self.cpd_format(tokens, language, exclude, result_file, inspect)
+  	  	UI.message "files         : #{inspect}"
+  		UI.message "min_tokens    : #{tokens}"
+  		UI.message "language      : #{language}"
+  		UI.message "exclude_files : #{exclude}"
+  		UI.message 'format        : xml'
+  		UI.message "output_file   : #{result_file}"
+  	  end
+  
+  	  # String colorization
+  	  # call UI.message Actions::FormatterAction.light_blue(text)
+  	  def self.light_blue(mytext) 
+   		"\e[36m#{mytext}\e[0m" 
+      end
   
       #####################################################
       # @!group Documentation
@@ -57,18 +52,18 @@ def self.return_status(mystatus)
         
         # Below a few examples
         [
-          FastlaneCore::ConfigItem.new(key: :api_token,
-                                       env_name: "FL_FORMATTER_API_TOKEN", # The name of the environment variable
-                                       description: "API Token for FormatterAction", # a short description of this parameter
-                                       verify_block: proc do |value|
-                                          UI.user_error!("No API token for FormatterAction given, pass using `api_token: 'token'`") unless (value and not value.empty?)
-                                          # UI.user_error!("Couldn't find file at path '#{value}'") unless File.exist?(value)
-                                       end),
-          FastlaneCore::ConfigItem.new(key: :development,
-                                       env_name: "FL_FORMATTER_DEVELOPMENT",
-                                       description: "Create a development certificate instead of a distribution one",
-                                       is_string: false, # true: verifies the input is a string, false: every kind of value
-                                       default_value: false) # the default value if the user didn't provide one
+         # FastlaneCore::ConfigItem.new(key: :api_token,
+         #                              env_name: "FL_FORMATTER_API_TOKEN", # The name of the environment variable
+         #                              description: "API Token for FormatterAction", # a short description of this parameter
+         #                              verify_block: proc do |value|
+         #                                 UI.user_error!("No API token for FormatterAction given, pass using `api_token: 'token'`") unless (value and not value.empty?)
+         #                                 # UI.user_error!("Couldn't find file at path '#{value}'") unless File.exist?(value)
+         #                              end),
+         # FastlaneCore::ConfigItem.new(key: :development,
+         #                             env_name: "FL_FORMATTER_DEVELOPMENT",
+         #                              description: "Create a development certificate instead of a distribution one",
+         #                              is_string: false, # true: verifies the input is a string, false: every kind of value
+         #                              default_value: false) # the default value if the user didn't provide one
         ]
       end
 
@@ -76,7 +71,7 @@ def self.return_status(mystatus)
         # Define the shared values you are going to provide
         # Example
         [
-          ['FORMATTER_CUSTOM_VALUE', 'A description of what this value contains']
+          #['FORMATTER_CUSTOM_VALUE', 'A description of what this value contains']
         ]
       end
 
@@ -86,7 +81,7 @@ def self.return_status(mystatus)
 
       def self.authors
         # So no one will ever forget your contribution to fastlane :) You are awesome btw!
-        ["Your GitHub/Twitter Name"]
+        ["knolga"]
       end
 
       def self.is_supported?(platform)

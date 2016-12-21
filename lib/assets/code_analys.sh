@@ -4,16 +4,16 @@
 # @desc Detect code warnings/errors by using static analyzer build in Xcode. 
 # @usage
 # 1. Income parameters
-# BUILD_LANE - name of project scheme
-# LOG - name of .log file for temporary usage to store full output of Xcode command
-# TEMP_LOG - name of .log file for temporary usage to store detected warnings/errors (unformatted)
+# WORKSPACE - name of xcode project workspace (.xcworkspace)
+# BUILD_LANE - name of project target
+# LOG - path-name of .log file for temporary usage to store full output of Xcode command
 
-BUILD_LANE=$1
-LOG=$2
-SRCROOT=$3
+WORKSPACE=$1
+BUILD_LANE=$2
+LOG=$3
 
 #detect warnings
 #analyze code (build in xcode tools)
-xcodebuild -scheme $BUILD_LANE -workspace 'mobilecasino.xcworkspace' clean analyze |
-tee "${SRCROOT}${LOG}" | 
+xcodebuild -scheme $BUILD_LANE -workspace $WORKSPACE clean analyze |
+tee ${LOG} | 
 xcpretty

@@ -23,20 +23,19 @@ module Fastlane
       # ================= For all parsers =================
       #####################################################
 
-      def self.create_xml(root_data, full_data, end_tag, result_file_name)
-        xml_data = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        xml_data += root_data
-        xml_data += full_data
-        xml_data += end_tag
-        File.open(file_path("#{result_file_name}.xml"), 'w') do |f|
-          f.write(xml_data)
-        end
-      end
+    #  def self.create_xml(root_data, full_data, end_tag, result_file_name)
+    #    xml_data = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    #    xml_data += root_data
+    #    xml_data += full_data
+    #    xml_data += end_tag
+    #    File.open(file_path("#{result_file_name}.xml"), 'w') do |f|
+    #      f.write(xml_data)
+    #    end
+    #  end
   
-      def self.create_xml2(xml_data_custom, result_file_name)
+      def self.create_xml(xml_data_custom, result_file_name)
         xml_data = '<?xml version="1.0" encoding="UTF-8"?>'
         xml_data += xml_data_custom
-        UI.success "write to file: #{result_file_name}"
         File.open(result_file_name, 'w') do |f|
           f.write(xml_data)
         end
@@ -111,7 +110,35 @@ module Fastlane
       # create root xml content
       def self.create_code_analysis_junit_xml(testsuite, result_file_name)
         full_data = create_testsuites(testsuite)
-        create_xml2(full_data, result_file_name)
+        create_xml(full_data, result_file_name)
+      end
+  
+  	  #####################################################
+      # ============== Xcode-log Parser ================
+      #####################################################
+   
+      def self.parse_code_analysis_xml(file, project, is_warn)
+        if is_warn
+          error_text = ''
+          File.open(file).each do |line|
+            if line =~ /warning:|error:/
+              warning_params = line.split(':')
+              error_text += Actions::JunitParserAction.construct_failure_mes(
+                ['Error ClassType', 'Error in File', 'Error Line', 'Error Message'],
+                [Actions::JunitParserAction.get_failure_type(warning_params[4]), warning_params[0].tr('<', '').tr('>', ''),
+                 "#{warning_params[1]}:#{warning_params[2]}", warning_params[4].tr("\n", '')]
+              )
+            end
+            next unless line =~ /BCEROR/
+            error_text += Actions::JunitParserAction.construct_failure_mes(['Error ClassType', 'Error in File', 'Error Message'],
+                                                [Actions::JunitParserAction.get_failure_type(line), 'project configuration',
+                                                 line.tr("\n", '')])
+          end
+          failures = Actions::JunitParserAction.add_failure('', '', error_text)
+          Actions::JunitParserAction.add_failed_testcase('', project, failures)
+        else
+          Actions::JunitParserAction.add_success_testcase('', project)
+        end
       end
   
   	  #####################################################
