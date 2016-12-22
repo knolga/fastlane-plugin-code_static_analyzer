@@ -1,21 +1,15 @@
 require 'crack'
-
 module Fastlane
   module Actions
-    module SharedValues
-      JUNIT_DATA = :JUNIT_DATA
-    end
+   # module SharedValues
+   #   JUNIT_DATA = :JUNIT_DATA
+   # end
 
     class JunitParserAction < Action
     
       def self.run(params)
-      puts params
         # fastlane will take care of reading in the parameter and fetching the environment variable:
         #UI.message "Required Parameter API Token: #{params[:api_token]}"
- 		#UI.message "Optional Parameter develop  : #{params[:development]}"
-        # sh "shellcommand ./path"
-    
-
         # Actions.lane_context[SharedValues::JUNIT_PARSER_CUSTOM_VALUE] = "my_val"
       end
 
@@ -23,16 +17,6 @@ module Fastlane
       # ================= For all parsers =================
       #####################################################
 
-    #  def self.create_xml(root_data, full_data, end_tag, result_file_name)
-    #    xml_data = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    #    xml_data += root_data
-    #    xml_data += full_data
-    #    xml_data += end_tag
-    #    File.open(file_path("#{result_file_name}.xml"), 'w') do |f|
-    #      f.write(xml_data)
-    #    end
-    #  end
-  
       def self.create_xml(xml_data_custom, result_file_name)
         xml_data = '<?xml version="1.0" encoding="UTF-8"?>'
         xml_data += xml_data_custom
@@ -45,19 +29,19 @@ module Fastlane
         "#{xml_level(0)}<testsuites>#{testsuites}#{xml_level(0)}</testsuites>"
       end
     
-      def self.add_testsuite(id, name, testcases)
-        "#{xml_level(1)}<testsuite id='#{id}' name='#{name}'>" \
+      def self.add_testsuite(name, testcases)
+        "#{xml_level(1)}<testsuite name='#{name}'>" \
         "#{testcases}" \
         "#{xml_level(1)}</testsuite>"
       end
     
-      def self.add_failed_testcase(id, name, failures)
-        "#{xml_level(2)}<testcase #{insert_attribute('id', id)} name='#{name}'>" \
+      def self.add_failed_testcase(name, failures)
+        "#{xml_level(2)}<testcase name='#{name}'>" \
         "#{failures}#{xml_level(2)}</testcase>"
       end
     
-      def self.add_success_testcase(_id, name)
-        "#{xml_level(2)}<testcase  name='#{name}' status='success'/>"
+      def self.add_success_testcase(name)
+        "#{xml_level(2)}<testcase name='#{name}' status='success'/>"
       end
     
       def self.add_failure(message, type, text)
@@ -108,7 +92,7 @@ module Fastlane
       end
       
       # create root xml content
-      def self.create_code_analysis_junit_xml(testsuite, result_file_name)
+      def self.create_junit_xml(testsuite, result_file_name)
         full_data = create_testsuites(testsuite)
         create_xml(full_data, result_file_name)
       end
@@ -117,7 +101,7 @@ module Fastlane
       # ============== Xcode-log Parser ================
       #####################################################
    
-      def self.parse_code_analysis_xml(file, project, is_warn)
+      def self.parse_xcode_log(file, project, is_warn)
         if is_warn
           error_text = ''
           File.open(file).each do |line|
@@ -135,9 +119,9 @@ module Fastlane
                                                  line.tr("\n", '')])
           end
           failures = Actions::JunitParserAction.add_failure('', '', error_text)
-          Actions::JunitParserAction.add_failed_testcase('', project, failures)
+          Actions::JunitParserAction.add_failed_testcase(project, failures)
         else
-          Actions::JunitParserAction.add_success_testcase('', project)
+          Actions::JunitParserAction.add_success_testcase(project)
         end
       end
   
@@ -145,7 +129,7 @@ module Fastlane
       # ============== Rubocop-json Parser ================
       #####################################################
       
-      def self.parse_json_to_xml(file)
+      def self.parse_json(file)
         data_read = File.read(file)
         data_hash = Crack::JSON.parse(data_read)
     
@@ -153,19 +137,19 @@ module Fastlane
         values = data_hash['metadata'].values.zip(data_hash['summary'].values).flatten.compact
         properties = add_properties(keys, values)
     
-        testcase = Actions::JunitParserAction.parse_main_json_to_xml(data_hash)
+        testcase = Actions::JunitParserAction.parse_main_json(data_hash)
     
         properties + testcase
       end
     
       # create main xml content
-      def self.parse_main_json_to_xml(data_hash)
+      def self.parse_main_json(data_hash)
         xml = ''
         data_hash['files'].each do |inspected_file|
           error_text = ''
           errors = inspected_file['offenses']
           if errors.empty?
-            xml += Actions::JunitParserAction.add_success_testcase('id', (inspected_file['path']).to_s)
+            xml += Actions::JunitParserAction.add_success_testcase((inspected_file['path']).to_s)
           else
             errors.each do |error|
               error_text += Actions::JunitParserAction.construct_failure_mes(
@@ -176,7 +160,7 @@ module Fastlane
             end
             # TODO: corrected:6 failded:0 (if needed this info)
             failures = Actions::JunitParserAction.add_failure('lineformat=line:column:length', '', error_text)
-            xml += Actions::JunitParserAction.add_failed_testcase('id', (inspected_file['path']).to_s, failures)
+            xml += Actions::JunitParserAction.add_failed_testcase((inspected_file['path']).to_s, failures)
           end
         end
         xml
@@ -190,13 +174,13 @@ module Fastlane
       # ================= CPD-xml Parser ==================
       #####################################################
 
-      def self.parse_xml_to_xml(file)
+      def self.parse_xml(file)
         data_read = File.read(file)
         data_hash = Crack::XML.parse(data_read)
     
         if data_hash.empty?
           puts 'empty data_hash'
-          Actions::JunitParserAction.add_success_testcase('', 'casino duplications')
+          Actions::JunitParserAction.add_success_testcase('casino duplications')
         else
           Actions::JunitParserAction.parse_code_duplications(data_hash)
         end
@@ -208,21 +192,21 @@ module Fastlane
         if duplications.is_a?(Array)
           index = 1
           duplications.each do |error|
-            parsed_files = Actions::JunitParserAction.parse_inspected_files2(error['file'])
+            parsed_files = Actions::JunitParserAction.parse_inspected_files(error['file'])
             failure = Actions::JunitParserAction.add_failure("lines:#{error['lines']} tokens:#{error['tokens']} #{xml_level(3)}files:#{parsed_files}", '', "\n#{error['codefragment']}")
-            xml += Actions::JunitParserAction.add_failed_testcase('', "duplication #{index}", failure)
+            xml += Actions::JunitParserAction.add_failed_testcase("duplication #{index}", failure)
             index += 1
           end
         else
-          parsed_files = Actions::JunitParserAction.parse_inspected_files2(duplications['file'])
+          parsed_files = Actions::JunitParserAction.parse_inspected_files(duplications['file'])
           failure = Actions::JunitParserAction.add_failure("lines:#{duplications['lines']} tokens:#{duplications['tokens']} #{xml_level(3)}files:#{parsed_files}", '',
                                 "\n #{duplications['codefragment']}")
-          xml += Actions::JunitParserAction.add_failed_testcase('', 'single duplication', failure)
+          xml += Actions::JunitParserAction.add_failed_testcase('single duplication', failure)
         end
         xml
       end
     
-    def self.parse_inspected_files2(file_list)
+    def self.parse_inspected_files(file_list)
         index = 1
         file_list_info = []
         file_list.each do |file|
@@ -231,25 +215,13 @@ module Fastlane
         end
         file_list_info
       end
-      
-      def self.parse_inspected_files(file_list)
-        index = 1
-        information = []
-        headers = []
-        file_list.each do |file|
-          information.push("#{file['path']}::#{file['line']}")
-          headers.push("File #{index}")
-          index += 1
-        end
-        [headers, information]
-      end
-  
+    
       #####################################################
       # @!group Documentation
       #####################################################
 
       def self.description
-        "A short description with <= 80 characters of what this action does"
+        "parse resulting files of different static analyzers to junit format"
       end
 
       def self.details
@@ -260,32 +232,13 @@ module Fastlane
 
       def self.available_options
         # Define all options your action supports. 
-        
-        # Below a few examples
-        [
-       #   FastlaneCore::ConfigItem.new(key: :parser_action,
-       #                                env_name: "FL_JUNIT_PARSER_ACTION", # The name of the environment variable
-       #                                description: "To decetect which function to call parse/create..", # a short description of this parameter
-       #                                verify_block: proc do |value|
-       #                                   UI.user_error!("No parser_action for JunitParserAction given, pass using `parser_action: 'xml/json/log/new_testsuite/full_result'`") unless (value and not value.empty?)
-       #                                   # UI.user_error!("Couldn't find file at path '#{value}'") unless File.exist?(value)
-       #                                end),
-       #   FastlaneCore::ConfigItem.new(key: :file_to_parse,
-       #                                env_name: "FL_JUNIT_PARSER_FILE_PARSED",
-       #                                description: "Path/to/file.with_extention for parsing",
-       #                                verify_block: proc do |value|
-       #                                   UI.user_error!("Couldn't find file at path '#{value}'") unless (File.exist?(value) or value.empty?)
-       #                                end)
-       #                                #is_string: false, # true: verifies the input is a string, false: every kind of value
-                                       #default_value: false) # the default value if the user didn't provide one
-        ]
       end
 
       def self.output
         # Define the shared values you are going to provide
         # Example
         [
-          ['JUNIT_DATA', 'Return input data in junit xml format']
+          #['JUNIT_DATA', 'Return input data in junit xml format']
         ]
       end
 

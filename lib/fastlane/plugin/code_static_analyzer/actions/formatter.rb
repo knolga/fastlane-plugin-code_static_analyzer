@@ -13,7 +13,7 @@ module Fastlane
       def self.return_status(mystatus)
         UI.message Actions::FormatterAction.light_blue(">>> Exit command status: #{mystatus}")
   	  end
-		
+  	  
   	  def self.xcode_format(scheme)
   		UI.message ">>> Running Xcode analyze command... on #{scheme}..."
   	  end
@@ -38,33 +38,16 @@ module Fastlane
       #####################################################
 
       def self.description
-        "A short description with <= 80 characters of what this action does"
+        "Custom output formatter"
       end
 
       def self.details
         # Optional:
         # this is your chance to provide a more detailed description of this action
-        "You can use this action to do cool things..."
       end
 
       def self.available_options
         # Define all options your action supports. 
-        
-        # Below a few examples
-        [
-         # FastlaneCore::ConfigItem.new(key: :api_token,
-         #                              env_name: "FL_FORMATTER_API_TOKEN", # The name of the environment variable
-         #                              description: "API Token for FormatterAction", # a short description of this parameter
-         #                              verify_block: proc do |value|
-         #                                 UI.user_error!("No API token for FormatterAction given, pass using `api_token: 'token'`") unless (value and not value.empty?)
-         #                                 # UI.user_error!("Couldn't find file at path '#{value}'") unless File.exist?(value)
-         #                              end),
-         # FastlaneCore::ConfigItem.new(key: :development,
-         #                             env_name: "FL_FORMATTER_DEVELOPMENT",
-         #                              description: "Create a development certificate instead of a distribution one",
-         #                              is_string: false, # true: verifies the input is a string, false: every kind of value
-         #                              default_value: false) # the default value if the user didn't provide one
-        ]
       end
 
       def self.output
