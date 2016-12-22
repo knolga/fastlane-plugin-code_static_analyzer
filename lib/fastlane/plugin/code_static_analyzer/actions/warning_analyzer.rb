@@ -8,6 +8,7 @@ module Fastlane
     class WarningAnalyzerAction < Action
       def self.run(params)
         raise "Wrong path '#{params[:work_dir]}/#{params[:project_name]}' or you have different names for project & workspace" unless (File.exist?("#{params[:work_dir]}/#{params[:project_name]}.xcodeproj") or File.exist?("#{params[:work_dir]}/#{params[:project_name]}.xcworkspace"))                                  
+        FileUtils.mkdir_p("#{params[:work_dir]}/#{params[:result_dir]}") unless File.exist?("#{params[:work_dir]}/#{params[:result_dir]}")
         lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
         run_script_path = File.join(lib_path, "assets/code_analys.sh")
   

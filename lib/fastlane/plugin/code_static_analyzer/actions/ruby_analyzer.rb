@@ -6,6 +6,7 @@ module Fastlane
 
     class RubyAnalyzerAction < Action
       def self.run(params)
+        FileUtils.mkdir_p("#{params[:work_dir]}/#{params[:result_dir]}") unless File.exist?("#{params[:work_dir]}/#{params[:result_dir]}")
         temp_result_file = "#{params[:work_dir]}/#{params[:result_dir]}/temp_ruby.json"
         result_file = "#{params[:work_dir]}/#{params[:result_dir]}/codeAnalysResults_ruby.xml"
      	files = Actions::CpdAnalyzerAction.add_root_path(params[:work_dir], params[:files_to_inspect], true) 

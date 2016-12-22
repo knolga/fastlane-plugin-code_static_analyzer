@@ -9,25 +9,33 @@ module Fastlane
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
     
       def self.run(params)
-        work_dir = params[:work_dir]                 
-        params[:files_to_exclude].each do |file_path|
-          UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_exclude'") unless File.exist?("#{work_dir}#{file_path}")
+        work_dir = params[:work_dir] 
+        files_to_exclude = params[:files_to_exclude]
+        files_to_inspect = params[:files_to_inspect]
+        if files_to_exclude               
+          files_to_exclude.each do |file_path|
+            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_exclude'") unless File.exist?("#{work_dir}#{file_path}")
+          end
         end   
-        params[:files_to_inspect].each do |file_path|
-          UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_inspect'") unless File.exist?("#{work_dir}#{file_path}")
-        end  
+        if files_to_inspect
+          files_to_inspect.each do |file_path|
+            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_inspect'") unless File.exist?("#{work_dir}#{file_path}")
+          end
+        end
+
+        FileUtils.mkdir_p("#{work_dir}/#{params[:result_dir]}") unless File.exist?("#{work_dir}/#{params[:result_dir]}")
         temp_result_file = "#{work_dir}/#{params[:result_dir]}/temp_copypaste.xml"
         result_file = "#{work_dir}/#{params[:result_dir]}/codeAnalysResults_cpd.xml"
         tokens = params[:tokens]
-          files = Actions::CpdAnalyzerAction.add_root_path(work_dir, params[:files_to_inspect], true) 
+          files = Actions::CpdAnalyzerAction.add_root_path(work_dir, files_to_inspect, true) 
         lan = params[:language]
-        files_to_exclude = Actions::CpdAnalyzerAction.add_root_path(work_dir, params[:files_to_exclude], false)   
+        exclude_files = Actions::CpdAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)   
         
         lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
         run_script_path = File.join(lib_path, "assets/cpd_code_analys.sh")
 
-    	run_script = "#{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{files_to_exclude}' '#{lan}'"
-    	Actions::FormatterAction.cpd_format(tokens,lan,files_to_exclude,temp_result_file,files )
+    	run_script = "#{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{exclude_files}' '#{lan}'"
+    	Actions::FormatterAction.cpd_format(tokens, lan, exclude_files, temp_result_file, files )
     	FastlaneCore::CommandExecutor.execute(command: "#{run_script}",
                                			     print_all: false,
                                    			 error: proc do |error_output|
