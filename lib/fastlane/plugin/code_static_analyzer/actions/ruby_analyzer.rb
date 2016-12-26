@@ -46,7 +46,7 @@ module Fastlane
       def self.details
         # Optional:
         # this is your chance to provide a more detailed description of this action
-        "You can use this action to do cool things..."
+        #"You can use this action to do cool things..."
       end
 
       def self.available_options
@@ -65,21 +65,21 @@ module Fastlane
                           end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                         env_name: "FL_RUBY_ANALYZER_RESULT_DIR",
-                        description: "Directory's name for storing  analysis results",
+                        description: "[optional] Directory's name for storing  analysis results",
                         optional: true,
                         type: String,
                         default_value: 'artifacts'),
           FastlaneCore::ConfigItem.new(key: :files_to_inspect,
-                                   env_name: "FL_RUBY_ANALYZER_FILES_TO_INSPECT",
-                                   description: "List of path (relative to work directory) to files to be inspected on copy paste",
-                                   optional: false,
-                                   type: Array,
-                                   verify_block: proc do |value|
-                                     UI.user_error!("No files to inspect for RubyAnalyzerAction given, pass using `files_to_inspect` parameter") unless value and !value.empty?
-                                     value.each do |file_path|
-                                       UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                                     end
-                                   end)
+                        env_name: "FL_RUBY_ANALYZER_FILES_TO_INSPECT",
+                        description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
+                        optional: false,
+                        type: Array,
+                        verify_block: proc do |value|
+                          UI.user_error!("No files to inspect for RubyAnalyzerAction given, pass using `files_to_inspect` parameter") unless value and !value.empty?
+                          value.each do |file_path|
+                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
+                          end
+                        end)
         ]
       end
 

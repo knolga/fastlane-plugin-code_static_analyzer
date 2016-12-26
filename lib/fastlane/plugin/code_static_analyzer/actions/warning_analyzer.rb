@@ -28,7 +28,7 @@ module Fastlane
           Actions::FormatterAction.xcode_format(target.name)
           project_workspace = params[:project_name]
           project_workspace = params[:workspace_name] if is_workspace
-          run_script = "#{run_script_path} #{project_workspace} #{target.name} #{temp_result_file} #{is_workspace}"
+          run_script = "#{run_script_path} #{project_workspace} #{target.name} #{temp_result_file} #{is_workspace}" 
 
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                          print_all: false,
@@ -70,7 +70,7 @@ module Fastlane
       def self.details
         # Optional:
         # this is your chance to provide a more detailed description of this action
-        "You can use this action to do cool things..."
+        #"You can use this action to do cool things..."
       end
 
       def self.available_options
@@ -87,27 +87,27 @@ module Fastlane
                            end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                            env_name: "FL_WARNING_ANALYZER_RESULT_DIR",
-                           description: "Directory's name for storing  analysis results",
+                           description: "[optional] Directory's name for storing  analysis results",
                            optional: true,
                            type: String,
                            default_value: 'artifacts'),
           FastlaneCore::ConfigItem.new(key: :project_name,
-                                       env_name: "FL_WARNING_ANALYZER_PROJECT_NAME",
-                                       description: "Xcode project name in work directory",
-                                       optional: false,
-                                       type: String,
-                                       verify_block: proc do |value|
-                                         UI.user_error!("No project name for WarningAnalyzerAction given, pass using `project_name` parameter") unless value and !value.empty?
-                                         UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj'
-                                       end),
+                           env_name: "FL_WARNING_ANALYZER_PROJECT_NAME",
+                           description: "Xcode project name in work directory",
+                           optional: false,
+                           type: String,
+                           verify_block: proc do |value|
+                             UI.user_error!("No project name for WarningAnalyzerAction given, pass using `project_name` parameter") unless value and !value.empty?
+                             UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj'
+                           end),
           FastlaneCore::ConfigItem.new(key: :workspace_name,
-                                       env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
-                                       description: "Xcode workspace name in work directory",
-                                       optional: true,
-                                       type: String,
-                                       verify_block: proc do |value|
-                                         UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace'
-                                       end)
+                           env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
+                           description: "[optional] Xcode workspace name in work directory",
+                           optional: true,
+                           type: String,
+                           verify_block: proc do |value|
+                             UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace'
+                           end)
         ]
       end
 

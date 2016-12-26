@@ -12,7 +12,7 @@ module Fastlane
         work_dir = params[:work_dir]
         files_to_exclude = params[:files_to_exclude]
         files_to_inspect = params[:files_to_inspect]
-        UI.message '[!] Analyzer will be run for all files in work directory'.blue if !files_to_inspect or files_to_inspect.empty?
+        UI.message '[!] CPD analyzer will be run for all files in work directory'.blue if !files_to_inspect or files_to_inspect.empty?
         if files_to_exclude
           files_to_exclude.each do |file_path|
             UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_exclude'") unless File.exist?("#{work_dir}#{file_path}")
@@ -74,7 +74,7 @@ module Fastlane
       def self.details
         # Optional:
         # this is your chance to provide a more detailed description of this action
-        "You can use this action to do cool things..."
+        #"You can use this action to do cool things..."
       end
 
       def self.available_options
@@ -91,19 +91,19 @@ module Fastlane
                         end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                         env_name: "FL_CPD_ANALYZER_RESULT_DIR",
-                        description: "Directory's name for storing  analysis results",
+                        description: "[optional] Directory's name for storing  analysis results",
                         optional: true,
                         type: String,
                         default_value: 'artifacts'),
           FastlaneCore::ConfigItem.new(key: :tokens,
                         env_name: "FL_CPD_ANALYZER_TOKENS",
-                        description: "The min number of words in code that is detected as copy paste",
+                        description: "[optional] The min number of words in code that is detected as copy paste",
                         optional: true,
                         type: String,
                         default_value: '100'),
           FastlaneCore::ConfigItem.new(key: :files_to_inspect,
                         env_name: "FL_CPD_ANALYZER_FILES_TO_INSPECT",
-                        description: "List of path (relative to work directory) to files to be inspected on copy paste",
+                        description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
                         optional: true,
                         type: Array,
                         verify_block: proc do |value|
@@ -112,24 +112,24 @@ module Fastlane
                           end
                         end),
           FastlaneCore::ConfigItem.new(key: :files_to_exclude,
-                                        env_name: "FL_CPD_ANALYZER_FILES_NOT_TO_INSPECT",
-                                        description: "List of path (relative to work directory) to files not to be inspected on copy paste",
-                                        optional: true,
-                                        type: Array,
-                                        verify_block: proc do |value|
-                                          value.each do |file_path|
-                                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                                          end
-                                        end),
+                        env_name: "FL_CPD_ANALYZER_FILES_NOT_TO_INSPECT",
+                        description: "[optional] List of path (relative to work directory) to files not to be inspected on copy paste",
+                        optional: true,
+                        type: Array,
+                        verify_block: proc do |value|
+                          value.each do |file_path|
+                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
+                          end
+                        end),
           FastlaneCore::ConfigItem.new(key: :language,
-                                  env_name: "FL_CPD_ANALYZER_FILE_LANGUAGE",
-                                  description: "Language used in files that will be inspected on copy paste.  Supported analyzers: #{SUPPORTED_LAN}",
-                                  optional: false,
-                                  type: String,
-                                  verify_block: proc do |value|
-                                    UI.user_error!("No language for CpdAnalyzerAction given, pass using `language` parameter") unless value and !value.empty?
-                                    UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN}") unless SUPPORTED_LAN.include? value
-                                  end)
+                        env_name: "FL_CPD_ANALYZER_FILE_LANGUAGE",
+                        description: "Language used in files that will be inspected on copy paste.  Supported analyzers: #{SUPPORTED_LAN}",
+                        optional: false,
+                        type: String,
+                        verify_block: proc do |value|
+                          UI.user_error!("No language for CpdAnalyzerAction given, pass using `language` parameter") unless value and !value.empty?
+                          UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN}") unless SUPPORTED_LAN.include? value
+                        end)
         ]
       end
 

@@ -82,7 +82,9 @@ module Fastlane
 
       def self.details
         # Optional:
-        "This plugins is the helper for checking code on warnings, copypaste, syntax, etc."
+        "This plugins is the helper for checking code on warnings, copypaste, syntax, etc.\n" \
+        "Each analyzer in this plugin save result status in shared values <NAME>_ANALYZER_STATUS: 0 - code is clear, any other value - code include warnings/errors.\n" \
+        "Also each analyzer save results in separate file: codeAnalysResult_<name of analyzer>.xml"
       end
 
       def self.available_options
@@ -95,7 +97,7 @@ module Fastlane
                                 verify_block: proc do |value|
                                   UI.message '[!] Will be run all analyzers'.blue if (value and value.empty?) or value[0] == 'all'
                                   value.each do |run_analyzer|
-                                    UI.user_error!("The analyzer '#{run_analyzer}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'") unless SUPPORTED_ANALYZER.include? run_analyzer or value[0] != 'all'
+                                    UI.user_error!("The analyzer '#{run_analyzer}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'") unless SUPPORTED_ANALYZER.include? run_analyzer or run_analyzer == 'all'
                                   end
                                 end),
           FastlaneCore::ConfigItem.new(key: :root_dir,
@@ -109,18 +111,18 @@ module Fastlane
                               end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                               env_name: "CSA_RESULT_DIR_NAME",
-                              description: "Directory's name for storing  analysis results",
+                              description: "[optional] Directory's name for storing  analysis results",
                               optional: true,
                               type: String,
                               default_value: 'artifacts'),
           # parameters for CPD analyzer
           FastlaneCore::ConfigItem.new(key: :cpd_tokens,
-                                   description: "The min number of words in code that is detected as copy paste",
+                                   description: "[optional] The min number of words in code that is detected as copy paste",
                                    optional: true,
                                    type: String,
                                    default_value: '100'),
           FastlaneCore::ConfigItem.new(key: :cpd_files,
-                                   description: "List of path (relative to work directory) to files to be inspected on copy paste",
+                                   description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
                                    optional: true,
                                    type: Array,
                                    verify_block: proc do |value|
@@ -129,7 +131,7 @@ module Fastlane
                                      end
                                    end),
           FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude,
-                                    description: "List of path (relative to work directory) to files not to be inspected on copy paste",
+                                    description: "[optional] List of path (relative to work directory) to files not to be inspected on copy paste",
                                     optional: true,
                                     type: Array,
                                     verify_block: proc do |value|
@@ -147,7 +149,7 @@ module Fastlane
           # next parameters are optional, but some of them are required in analyzer if it has to be run
           # parameters for Ruby analyzer
           FastlaneCore::ConfigItem.new(key: :ruby_files, # required in analyzer
-                                   description: "List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
+                                   description: "[optional] List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
                                    optional: true,
                                    type: Array,
                                    verify_block: proc do |value|
@@ -157,14 +159,14 @@ module Fastlane
                                    end),
           # parameters for Warnings analyzer
           FastlaneCore::ConfigItem.new(key: :xcode_project, # required in analyzer
-                                 description: "Xcode project name in work directory",
+                                 description: "[optional] Xcode project name in work directory",
                                  optional: true,
                                  type: String,
                                  verify_block: proc do |value|
                                    UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj' and !value.empty?
                                  end),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace,
-                                 description: "Xcode workspace name in work directory",
+                                 description: "[optional] Xcode workspace name in work directory",
                                  optional: true,
                                  type: String,
                                  verify_block: proc do |value|
