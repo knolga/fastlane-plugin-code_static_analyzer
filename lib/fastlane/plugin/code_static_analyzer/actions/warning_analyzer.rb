@@ -7,7 +7,13 @@ module Fastlane
 
     class WarningAnalyzerAction < Action
       def self.run(params)
-        raise "Wrong path '#{params[:work_dir]}/#{params[:project_name]}' or you have different names for project & workspace" unless (File.exist?("#{params[:work_dir]}/#{params[:project_name]}.xcodeproj") or File.exist?("#{params[:work_dir]}/#{params[:project_name]}.xcworkspace"))                                  
+        UI.header 'Step warning_analyzer'
+        raise "Wrong project path '#{params[:work_dir]}/#{params[:project_name]}'" unless File.exist?("#{params[:work_dir]}/#{params[:project_name]}") 
+        is_workspace = false
+        if params[:workspace_name] and (not params[:workspace_name].empty?)
+         raise "Wrong workspace path '#{params[:work_dir]}/#{params[:workspace_name]}'" unless File.exist?("#{params[:work_dir]}/#{params[:workspace_name]}") 
+         is_workspace = true
+        end                             
         FileUtils.mkdir_p("#{params[:work_dir]}/#{params[:result_dir]}") unless File.exist?("#{params[:work_dir]}/#{params[:result_dir]}")
         lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
         run_script_path = File.join(lib_path, "assets/code_analys.sh")
@@ -17,11 +23,13 @@ module Fastlane
         temp_result_file = "#{params[:work_dir]}/#{params[:result_dir]}/temp_warnings.log" #log_file
         result_file = "#{params[:work_dir]}/#{params[:result_dir]}/codeAnalysResults_warning.xml"
     
-        project = Xcodeproj::Project.open("#{params[:project_name]}.xcodeproj")
+        project = Xcodeproj::Project.open("#{params[:project_name]}")
 		project.targets.each do |target| 
   		  Actions::FormatterAction.xcode_format(target.name)
-		  run_script = "#{run_script_path} #{params[:project_name]}.xcworkspace #{target.name} #{temp_result_file} "
-
+  		  project_workspace = params[:project_name]
+  		  project_workspace = params[:workspace_name] if is_workspace
+		  run_script = "#{run_script_path} #{project_workspace} #{target.name} #{temp_result_file} #{is_workspace}" 
+		
     	  FastlaneCore::CommandExecutor.execute(command: "#{run_script}",
                             			     print_all: false,
                             			     print_command: false,
@@ -41,14 +49,14 @@ module Fastlane
 		junit_xml = Actions::JunitParserAction.add_testsuite('xcode warnings', xml_content)
         # create full file with results
 		Actions::JunitParserAction.create_junit_xml(junit_xml, result_file)
-		
+		 
 		status = if status_static_arr.any? { |x| x > 0 }
                   1
                 else
                   0
                 end
-		
-         Actions.lane_context[SharedValues::WARNING_ANALYZER_STATUS] = status
+
+        Actions.lane_context[SharedValues::WARNING_ANALYZER_STATUS] = status
       end
 
       #####################################################
@@ -85,9 +93,21 @@ module Fastlane
                             			default_value: 'artifacts'),
           FastlaneCore::ConfigItem.new(key: :project_name,
                                        env_name: "FL_WARNING_ANALYZER_PROJECT_NAME",
-                                       description: "Xcode project-workspace name (without extention) in work directory", 
+                                       description: "Xcode project name in work directory", 
                                        optional: false,
-                                       type: String)
+                                       type: String,
+                                       verify_block: proc do |value|
+                                          UI.user_error!("No project name for WarningAnalyzerAction given, pass using `project_name` parameter") unless (value and not value.empty?)
+                                          UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj'
+                                      end),
+          FastlaneCore::ConfigItem.new(key: :workspace_name,
+                                       env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
+                                       description: "Xcode workspace name in work directory", 
+                                       optional: true,
+                                       type: String,
+                                       verify_block: proc do |value|
+                                          UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace'
+                                      end)
         ]
       end
 

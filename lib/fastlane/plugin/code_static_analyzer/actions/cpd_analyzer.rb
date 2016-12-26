@@ -9,9 +9,11 @@ module Fastlane
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
     
       def self.run(params)
+        UI.header 'Step cpd_analyzer'
         work_dir = params[:work_dir] 
         files_to_exclude = params[:files_to_exclude]
         files_to_inspect = params[:files_to_inspect]
+        UI.message '[!] Analyzer will be run for all files in work directory'.blue if (not files_to_inspect or files_to_inspect.empty?)
         if files_to_exclude               
           files_to_exclude.each do |file_path|
             UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_exclude'") unless File.exist?("#{work_dir}#{file_path}")
@@ -106,7 +108,6 @@ module Fastlane
                         				optional: true,
                             			type: Array,
                             			verify_block: proc do |value|
-                                        UI.message '[!] Analyzer will be run for all files in work directory'.blue if value.empty?
                                           value.each do |file_path|
                                             UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
                                           end

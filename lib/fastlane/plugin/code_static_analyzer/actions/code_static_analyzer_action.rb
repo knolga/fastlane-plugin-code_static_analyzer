@@ -16,7 +16,7 @@ module Fastlane
      	analyzers.each do |analyzer|
         case analyzer
   			when 'xcodeWar' 
-    	  	  UI.user_error!("No project-workspace name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if ((not xcode_project) or  (xcode_project and xcode_project.empty?))
+    	  	  UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if ((not xcode_project) or  (xcode_project and xcode_project.empty?))
     	  	when 'rubocop' 
   			  UI.user_error!("No ruby files for Ruby Analyzer given. Pass using `ruby_files` or configure analyzers to run using `analyzers`") if ((not ruby_files) or  (ruby_files and ruby_files.empty?))
     	  	end
@@ -39,9 +39,11 @@ module Fastlane
        	analyzers.each do |analyzer|
           case analyzer
   			when 'xcodeWar' 
+  		
     	  	  status_static = Actions::WarningAnalyzerAction.run(work_dir: params[:root_dir],
       											 			result_dir: params[:result_dir],
-       														project_name: params[:xcode_project])
+       														project_name: params[:xcode_project], 
+       														workspace_name: params[:xcode_workspace]) 
   			when 'rubocop' 
     	  	  status_rubocop = Actions::RubyAnalyzerAction.run(work_dir: params[:root_dir],
       											 			result_dir: params[:result_dir],
@@ -125,29 +127,58 @@ module Fastlane
 			FastlaneCore::ConfigItem.new(key: :cpd_files, 
                      					description: "List of path (relative to work directory) to files to be inspected on copy paste",
                         				optional: true,
-                            			type: Array),
+                            			type: Array,
+                            			verify_block: proc do |value|
+                                          value.each do |file_path|
+                                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
+                                          end
+                                      	end),
 			FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude, 
                                 		description: "List of path (relative to work directory) to files not to be inspected on copy paste",
                                    		optional: true,
-                                       	type: Array),
+                                       	type: Array,
+                                       	verify_block: proc do |value|
+                                          value.each do |file_path|
+                                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
+                                          end
+                                      	end),
             FastlaneCore::ConfigItem.new(key: :cpd_language, 
                                 		description: "Language used in files that will be inspected on copy paste",
                                    		optional: false,
-                                       	type: String),
+                                       	type: String,
+                                       	verify_block: proc do |value|
+                                          UI.user_error!("No language for CpdAnalyzerAction given, pass using `language` parameter") unless (value and not value.empty?)
+                                          UI.user_error!("This language is not supported.  Supported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN}") unless  Actions::CpdAnalyzerAction::SUPPORTED_LAN.include? value
+                                      	end),
             # next parameters are optional, but some of them are required in analyzer if it has to be run
             # parameters for Ruby analyzer                           	
 			FastlaneCore::ConfigItem.new(key: :ruby_files, # required in analyzer
                      					description: "List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
                         				optional: true, 
-                            			type: Array),
+                            			type: Array,
+                            			verify_block: proc do |value|
+                                         value.each do |file_path|
+                                           UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
+                                         end
+                                      	end),
             # parameters for Warnings analyzer                			
             FastlaneCore::ConfigItem.new(key: :xcode_project, # required in analyzer
-                                       description: "Xcode project-workspace name (without extention) in work directory", 
+                                       description: "Xcode project name in work directory", 
                                        optional: true, 
-                            		   type: String)
+                            		   type: String,
+                            		   verify_block: proc do |value|
+                                         UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless (value.end_with? '.xcodeproj' and not value.empty?)
+                                       end),
+            FastlaneCore::ConfigItem.new(key: :xcode_workspace, 
+                                       description: "Xcode workspace name in work directory", 
+                                       optional: true, 
+                            		   type: String,
+                            		   verify_block: proc do |value|
+                                         UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless (value.end_with? '.xcworkspace' and not value.empty?)
+                                       end)
         ]
       end
-      	
+  
 	  def self.output
         # Define the shared values you are going to provide
         [
