@@ -4,6 +4,9 @@ module Fastlane
       RUBY_ANALYZER_STATUS = :RUBY_ANALYZER_STATUS
     end
 
+    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/formatter.rb'
+    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/junit_parser.rb'
+    
     class RubyAnalyzerAction < Action
       def self.run(params)
         UI.header 'Step ruby_analyzer'
@@ -19,10 +22,10 @@ module Fastlane
                                                      # handle error here
                                                    end)
         status = $?.exitstatus
-        xml_content = Actions::JunitParserAction.parse_json(temp_result_file)
-        junit_xml = Actions::JunitParserAction.add_testsuite('rubocop', xml_content)
+        xml_content = JunitParser.parse_json(temp_result_file)
+        junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
         # create full file with results
-        Actions::JunitParserAction.create_junit_xml(junit_xml, result_file)
+        JunitParser.create_junit_xml(junit_xml, result_file)
 
         Actions.lane_context[SharedValues::RUBY_ANALYZER_STATUS] = status
       end

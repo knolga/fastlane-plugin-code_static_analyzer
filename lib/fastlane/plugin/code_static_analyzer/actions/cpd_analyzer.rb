@@ -3,12 +3,15 @@ module Fastlane
     module SharedValues
       CPD_ANALYZER_STATUS = :CPD_ANALYZER_STATUS
     end
+    
+    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/formatter.rb'
+    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/junit_parser.rb'
 
     class CpdAnalyzerAction < Action
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
 
       def self.run(params)
-        UI.header 'Step cpd_analyzer'
+        UI.header 'Step cpd_analyzer'  
         work_dir = params[:work_dir]
         files_to_exclude = params[:files_to_exclude]
         files_to_inspect = params[:files_to_inspect]
@@ -36,17 +39,17 @@ module Fastlane
         run_script_path = File.join(lib_path, "assets/cpd_code_analys.sh")
 
         run_script = "bundle exec #{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{exclude_files}' '#{lan}'"
-        Actions::FormatterAction.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
+        Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                             print_all: false,
                                             error: proc do |error_output|
                                                      # handle error here
                                                    end)
         status = $?.exitstatus
-        xml_content = Actions::JunitParserAction.parse_xml(temp_result_file)
-        junit_xml = Actions::JunitParserAction.add_testsuite('copypaste', xml_content)
+        xml_content = JunitParser.parse_xml(temp_result_file)
+        junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
         # create full file with results
-        Actions::JunitParserAction.create_junit_xml(junit_xml, result_file)
+        JunitParser.create_junit_xml(junit_xml, result_file)
 
         Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
       end

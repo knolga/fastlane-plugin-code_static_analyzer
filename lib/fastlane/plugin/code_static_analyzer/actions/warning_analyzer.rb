@@ -5,6 +5,9 @@ module Fastlane
       WARNING_ANALYZER_STATUS = :WARNING_ANALYZER_STATUS
     end
 
+    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/formatter.rb'
+    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/junit_parser.rb'
+    
     class WarningAnalyzerAction < Action
       def self.run(params)
         UI.header 'Step warning_analyzer'
@@ -25,7 +28,7 @@ module Fastlane
 
         project = Xcodeproj::Project.open((params[:project_name]).to_s)
         project.targets.each do |target|
-          Actions::FormatterAction.xcode_format(target.name)
+          Formatter.xcode_format(target.name)
           project_workspace = params[:project_name]
           project_workspace = params[:workspace_name] if is_workspace
           run_script = "bundle exec #{run_script_path} #{project_workspace} #{target.name} #{temp_result_file} #{is_workspace}" 
@@ -44,11 +47,11 @@ module Fastlane
           else
             status_static_arr.push(0)
           end
-          xml_content += Actions::JunitParserAction.parse_xcode_log(temp_result_file, target.name, is_warnings)
+          xml_content += JunitParser.parse_xcode_log(temp_result_file, target.name, is_warnings)
         end
-        junit_xml = Actions::JunitParserAction.add_testsuite('xcode warnings', xml_content)
+        junit_xml = JunitParser.add_testsuite('xcode warnings', xml_content)
         # create full file with results
-        Actions::JunitParserAction.create_junit_xml(junit_xml, result_file)
+        JunitParser.create_junit_xml(junit_xml, result_file)
 
         status = if status_static_arr.any? { |x| x > 0 }
                    1
