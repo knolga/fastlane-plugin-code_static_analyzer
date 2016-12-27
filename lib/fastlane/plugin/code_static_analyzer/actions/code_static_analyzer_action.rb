@@ -8,6 +8,7 @@ module Fastlane
       SUPPORTED_ANALYZER = ["xcodeWar", "rubocop"]
 
       def self.run(params)
+        platform = Actions.lane_context[SharedValues::PLATFORM_NAME].to_s
         analyzers = params[:analyzers]
         analyzers = SUPPORTED_ANALYZER if (analyzers and analyzers.empty?) or analyzers[0] == 'all'
         ruby_files = params[:ruby_files]
@@ -15,7 +16,7 @@ module Fastlane
         analyzers.each do |analyzer|
           case analyzer
           when 'xcodeWar'
-            UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?)
+            UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?) and platform!='android'
           when 'rubocop'
             UI.user_error!("No ruby files for Ruby Analyzer given. Pass using `ruby_files` or configure analyzers to run using `analyzers`") if !ruby_files or (ruby_files and ruby_files.empty?)
           end
@@ -37,11 +38,12 @@ module Fastlane
         analyzers.each do |analyzer|
           case analyzer
           when 'xcodeWar'
-
+		    if platform!="android"
             status_static = Actions::WarningAnalyzerAction.run(work_dir: params[:root_dir],
                                     result_dir: params[:result_dir],
                                     project_name: params[:xcode_project],
-                                    workspace_name: params[:xcode_workspace])
+                                    workspace_name: params[:xcode_workspace]) 
+            end
           when 'rubocop'
             status_rubocop = Actions::RubyAnalyzerAction.run(work_dir: params[:root_dir],
                                     result_dir: params[:result_dir],
@@ -163,14 +165,14 @@ module Fastlane
                                  optional: true,
                                  type: String,
                                  verify_block: proc do |value|
-                                   UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj' and !value.empty?
+                                   UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj' and !value.empty? and Actions.lane_context[SharedValues::PLATFORM_NAME]!='android'
                                  end),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace,
                                  description: "[optional] Xcode workspace name in work directory",
                                  optional: true,
                                  type: String,
                                  verify_block: proc do |value|
-                                   UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace' and !value.empty?
+                                   UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace' and !value.empty? and Actions.lane_context[SharedValues::PLATFORM_NAME]!='android'
                                  end)
         ]
       end
@@ -187,8 +189,7 @@ module Fastlane
         # See: https://github.com/fastlane/fastlane/blob/master/fastlane/docs/Platforms.md
         #
         # [:ios, :mac, :android].include?(platform)
-        # true
-        platform == :ios
+         true
       end
     end
   end
