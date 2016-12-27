@@ -35,7 +35,7 @@ module Fastlane
         lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
         run_script_path = File.join(lib_path, "assets/cpd_code_analys.sh")
 
-        run_script = "#{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{exclude_files}' '#{lan}'"
+        run_script = "bundle exec #{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{exclude_files}' '#{lan}'"
         Actions::FormatterAction.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                             print_all: false,

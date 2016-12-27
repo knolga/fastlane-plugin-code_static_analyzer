@@ -28,7 +28,7 @@ module Fastlane
           Actions::FormatterAction.xcode_format(target.name)
           project_workspace = params[:project_name]
           project_workspace = params[:workspace_name] if is_workspace
-          run_script = "#{run_script_path} #{project_workspace} #{target.name} #{temp_result_file} #{is_workspace}" 
+          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target.name} #{temp_result_file} #{is_workspace}" 
 
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                          print_all: false,
