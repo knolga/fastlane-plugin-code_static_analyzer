@@ -12,33 +12,30 @@ module Fastlane
 
       def self.run(params)
         UI.header 'Step cpd_analyzer'  
-        work_dir = params[:work_dir]
-        files_to_exclude = params[:files_to_exclude]
-        files_to_inspect = params[:files_to_inspect]
+        work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
+        
+        # checking files for analysing 
+        files_to_exclude = params[:cpd_files_to_exclude]
+        files_to_inspect = params[:cpd_files_to_inspect]
         UI.message '[!] CPD analyzer will be run for all files in work directory'.blue if !files_to_inspect or files_to_inspect.empty?
-        if files_to_exclude
-          files_to_exclude.each do |file_path|
-            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_exclude'") unless File.exist?("#{work_dir}#{file_path}")
-          end
-        end
-        if files_to_inspect
-          files_to_inspect.each do |file_path|
-            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check parameters 'work_dir' and 'files_to_inspect'") unless File.exist?("#{work_dir}#{file_path}")
-          end
-        end
-
-        FileUtils.mkdir_p("#{work_dir}/#{params[:result_dir]}") unless File.exist?("#{work_dir}/#{params[:result_dir]}")
-        temp_result_file = "#{work_dir}/#{params[:result_dir]}/temp_copypaste.xml"
-        result_file = "#{work_dir}/#{params[:result_dir]}/codeAnalysResults_cpd.xml"
+        Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, files_to_exclude, 'cpd_files_to_exclude') if files_to_exclude
+        Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, files_to_inspect, 'cpd_files_to_inspect') if files_to_inspect
+       
+        # prepare script and metadata for saving results
+        result_dir_path = "#{work_dir}#{params[:result_dir]}"
+        FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
+        temp_result_file = "#{result_dir_path}/temp_copypaste.xml"
+        result_file = "#{result_dir_path}/codeAnalysResults_cpd.xml"
         tokens = params[:tokens]
-        files = Actions::CpdAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
+        files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true) #CpdAnalyzerAction
         lan = params[:language]
-        exclude_files = Actions::CpdAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)
+        exclude_files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)#CpdAnalyzerAction
 
         lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
         run_script_path = File.join(lib_path, "assets/cpd_code_analys.sh")
-
         run_script = "bundle exec #{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{exclude_files}' '#{lan}'"
+        
+        # use analyzer
         Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                             print_all: false,
@@ -46,24 +43,12 @@ module Fastlane
                                                      # handle error here
                                                    end)
         status = $?.exitstatus
+        # prepare results
         xml_content = JunitParser.parse_xml(temp_result_file)
         junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
-        # create full file with results
         JunitParser.create_junit_xml(junit_xml, result_file)
 
         Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
-      end
-
-      def self.add_root_path(root, file_list, is_inspected)
-        new_list = ''
-        if file_list.nil? || file_list.empty?
-          new_list = "#{root}/" if is_inspected
-        else
-          file_list.each do |file|
-            new_list += "#{root}#{file} "
-          end
-        end
-        new_list
       end
 
       #####################################################
@@ -83,15 +68,6 @@ module Fastlane
       def self.available_options
         # Define all options your action supports.
         [
-          FastlaneCore::ConfigItem.new(key: :work_dir,
-                        env_name: "FL_CPD_ANALYZER_WORK_DIR",
-                        description: "Path to work/project directory",
-                        optional: false,
-                        type: String,
-                        verify_block: proc do |value|
-                          UI.user_error!("No work directory for CpdAnalyzerAction given, pass using `work_dir` parameter") unless value and !value.empty?
-                          UI.user_error!("Couldn't find file at path '#{value}'") unless File.exist?(value)
-                        end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                         env_name: "FL_CPD_ANALYZER_RESULT_DIR",
                         description: "[optional] Directory's name for storing  analysis results",
@@ -104,26 +80,16 @@ module Fastlane
                         optional: true,
                         type: String,
                         default_value: '100'),
-          FastlaneCore::ConfigItem.new(key: :files_to_inspect,
+          FastlaneCore::ConfigItem.new(key: :cpd_files_to_inspect,
                         env_name: "FL_CPD_ANALYZER_FILES_TO_INSPECT",
                         description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
                         optional: true,
-                        type: Array,
-                        verify_block: proc do |value|
-                          value.each do |file_path|
-                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                          end
-                        end),
-          FastlaneCore::ConfigItem.new(key: :files_to_exclude,
+                        type: Array),
+          FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude,
                         env_name: "FL_CPD_ANALYZER_FILES_NOT_TO_INSPECT",
                         description: "[optional] List of path (relative to work directory) to files not to be inspected on copy paste",
                         optional: true,
-                        type: Array,
-                        verify_block: proc do |value|
-                          value.each do |file_path|
-                            UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                          end
-                        end),
+                        type: Array),
           FastlaneCore::ConfigItem.new(key: :language,
                         env_name: "FL_CPD_ANALYZER_FILE_LANGUAGE",
                         description: "Language used in files that will be inspected on copy paste.  Supported analyzers: #{SUPPORTED_LAN}",

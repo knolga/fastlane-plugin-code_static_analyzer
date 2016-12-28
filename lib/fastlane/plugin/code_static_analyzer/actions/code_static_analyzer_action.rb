@@ -5,49 +5,50 @@ module Fastlane
     end
 
     class CodeStaticAnalyzerAction < Action
-      SUPPORTED_ANALYZER = ["xcodeWar", "rubocop"]
+      SUPPORTED_ANALYZER = ["xcodeWar", "rubocop", "CPD"]
 
       def self.run(params)
         platform = Actions.lane_context[SharedValues::PLATFORM_NAME].to_s
+        root_dir = get_work_dir
         analyzers = params[:analyzers]
         analyzers = SUPPORTED_ANALYZER if (analyzers and analyzers.empty?) or analyzers[0] == 'all'
         ruby_files = params[:ruby_files]
-        xcode_project = params[:xcode_project]
+        xcode_project = params[:xcode_project_name]
+        
+        # use additional checks for optional parameters, but required in specific analyzer
         analyzers.each do |analyzer|
           case analyzer
           when 'xcodeWar'
             UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?) and platform!='android'
-          when 'rubocop'
-            UI.user_error!("No ruby files for Ruby Analyzer given. Pass using `ruby_files` or configure analyzers to run using `analyzers`") if !ruby_files or (ruby_files and ruby_files.empty?)
           end
         end
-
+        
         status_rubocop = 0
         status_static = 0
-
-        clear_all_files = "#{params[:root_dir]}/#{params[:result_dir]}/*.*"
-        clear_temp_files = "#{params[:root_dir]}/#{params[:result_dir]}/*temp*.*"
+        clear_all_files = "#{root_dir}#{params[:result_dir]}/*.*"
+        clear_temp_files = "#{root_dir}#{params[:result_dir]}/*temp*.*"
         sh "rm -rf #{clear_all_files}"
-        # CPD Parser
-        status_cpd = Actions::CpdAnalyzerAction.run(work_dir: params[:root_dir],
-                             result_dir: params[:result_dir],
+        
+        # Run alyzers
+        status_cpd = Actions::CpdAnalyzerAction.run(
+                              result_dir: params[:result_dir],
                               tokens: params[:cpd_tokens],
                               language: params[:cpd_language],
-                              files_to_inspect: params[:cpd_files],
-                              files_to_exclude: params[:cpd_files_to_exclude])
+                              cpd_files_to_inspect: params[:cpd_files_to_inspect],
+                              cpd_files_to_exclude: params[:cpd_files_to_exclude])
         analyzers.each do |analyzer|
           case analyzer
           when 'xcodeWar'
-		    if platform!="android"
-            status_static = Actions::WarningAnalyzerAction.run(work_dir: params[:root_dir],
+	        if platform!="android"
+              status_static = Actions::WarningAnalyzerAction.run(
                                     result_dir: params[:result_dir],
-                                    project_name: params[:xcode_project],
-                                    workspace_name: params[:xcode_workspace]) 
+                                    xcode_project_name: params[:xcode_project_name],
+                                    xcode_workspace_name: params[:xcode_workspace_name]) 
             end
           when 'rubocop'
-            status_rubocop = Actions::RubyAnalyzerAction.run(work_dir: params[:root_dir],
+            status_rubocop = Actions::RubyAnalyzerAction.run(
                                     result_dir: params[:result_dir],
-                                    files_to_inspect: params[:ruby_files])
+                                    ruby_files: params[:ruby_files])
           end
         end
         sh "rm -rf #{clear_temp_files}"
@@ -70,6 +71,33 @@ module Fastlane
         end
       end
 
+	  def self.get_work_dir
+	    directory = Dir.pwd
+        directory = directory + "/" unless directory.end_with? "/"
+	  end
+	  
+	  def self.check_file_exist(work_dir, file, parameter_name)
+	    if file.kind_of?(Array)
+	      file.each do |file_path|
+            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless File.exist?("#{work_dir}#{file_path}")
+          end
+	    else
+	      UI.user_error!("Unexisted path '#{work_dir}#{file}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless File.exist?("#{work_dir}#{file}")
+	    end
+	  end
+	
+	  def self.add_root_path(root, file_list, is_inspected)
+        file_list_str = ''
+        if file_list.nil? || file_list.empty?
+          file_list_str = "#{root}" if is_inspected
+        else
+          file_list.each do |file|
+            file_list_str += "#{root}#{file} "
+          end
+        end
+        file_list_str
+      end
+      
       def self.description
         "Runs different Static Analyzers and generate report"
       end
@@ -102,15 +130,6 @@ module Fastlane
                                     UI.user_error!("The analyzer '#{run_analyzer}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'") unless SUPPORTED_ANALYZER.include? run_analyzer or run_analyzer == 'all'
                                   end
                                 end),
-          FastlaneCore::ConfigItem.new(key: :root_dir,
-                              env_name: "FL_CSA_WORK_DIR",
-                              description: "Path to project/work directory. In this dir will be found all files for analysis and created results dir",
-                              optional: false,
-                              type: String,
-                              verify_block: proc do |value|
-                                UI.user_error!("No work directory given, pass using `root` parameter") unless value and !value.empty?
-                                UI.user_error!("Unexisted path '#{value}'") unless File.exist?(value)
-                              end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                               env_name: "CSA_RESULT_DIR_NAME",
                               description: "[optional] Directory's name for storing  analysis results",
@@ -123,24 +142,14 @@ module Fastlane
                                    optional: true,
                                    type: String,
                                    default_value: '100'),
-          FastlaneCore::ConfigItem.new(key: :cpd_files,
+          FastlaneCore::ConfigItem.new(key: :cpd_files_to_inspect,
                                    description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
                                    optional: true,
-                                   type: Array,
-                                   verify_block: proc do |value|
-                                     value.each do |file_path|
-                                       UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                                     end
-                                   end),
+                                   type: Array),
           FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude,
                                     description: "[optional] List of path (relative to work directory) to files not to be inspected on copy paste",
                                     optional: true,
-                                    type: Array,
-                                    verify_block: proc do |value|
-                                      value.each do |file_path|
-                                        UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                                      end
-                                    end),
+                                    type: Array),
           FastlaneCore::ConfigItem.new(key: :cpd_language,
                                   description: "Language used in files that will be inspected on copy paste",
                                   optional: false,
@@ -150,24 +159,19 @@ module Fastlane
                                   end),
           # next parameters are optional, but some of them are required in analyzer if it has to be run
           # parameters for Ruby analyzer
-          FastlaneCore::ConfigItem.new(key: :ruby_files, # required in analyzer
+          FastlaneCore::ConfigItem.new(key: :ruby_files, 
                                    description: "[optional] List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
                                    optional: true,
-                                   type: Array,
-                                   verify_block: proc do |value|
-                                     value.each do |file_path|
-                                       UI.user_error!("File at path '#{file_path}' should be relative to work dir and start from '/'") unless file_path.start_with? "/"
-                                     end
-                                   end),
+                                   type: Array),
           # parameters for Warnings analyzer
-          FastlaneCore::ConfigItem.new(key: :xcode_project, # required in analyzer
+          FastlaneCore::ConfigItem.new(key: :xcode_project_name, # required in analyzer
                                  description: "[optional] Xcode project name in work directory",
                                  optional: true,
                                  type: String,
                                  verify_block: proc do |value|
                                    UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj' and !value.empty? and Actions.lane_context[SharedValues::PLATFORM_NAME]!='android'
                                  end),
-          FastlaneCore::ConfigItem.new(key: :xcode_workspace,
+          FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
                                  description: "[optional] Xcode workspace name in work directory",
                                  optional: true,
                                  type: String,
