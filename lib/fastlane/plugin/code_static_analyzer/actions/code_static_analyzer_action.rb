@@ -6,8 +6,10 @@ module Fastlane
 
     class CodeStaticAnalyzerAction < Action
       SUPPORTED_ANALYZER = ["xcodeWar", "rubocop", "CPD"]
-
+	   attr_accessor :checked_pmd
+  
       def self.run(params)
+        Actions::CodeStaticAnalyzerAction.is_pmd_installed
         platform = Actions.lane_context[SharedValues::PLATFORM_NAME].to_s
         root_dir = get_work_dir
         analyzers = params[:analyzers]
@@ -62,6 +64,10 @@ module Fastlane
         end
       end
 
+      def self.methodA
+        @checked_pmd
+      end
+  
       def self.status_to_boolean(var)
         case var
         when 1, '1'
@@ -69,6 +75,16 @@ module Fastlane
         when 0, '0'
           return true
         end
+      end
+
+      def self.is_pmd_installed
+        @checked_pmd = false
+        begin
+     	  Actions.sh('type pmd')
+     	rescue
+     	  UI.user_error! 'PMD not installed. Please, install PMD for using copy paste analyzer.'
+     	end
+     	@checked_pmd = true
       end
 
 	  def self.get_work_dir
@@ -79,10 +95,10 @@ module Fastlane
 	  def self.check_file_exist(work_dir, file, parameter_name)
 	    if file.kind_of?(Array)
 	      file.each do |file_path|
-            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless File.exist?("#{work_dir}#{file_path}")
+            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless !Dir.glob("#{work_dir}#{file_path}").empty?
           end
 	    else
-	      UI.user_error!("Unexisted path '#{work_dir}#{file}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless File.exist?("#{work_dir}#{file}")
+	      UI.user_error!("Unexisted path '#{work_dir}#{file}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless !Dir.glob("#{work_dir}#{file}").empty?
 	    end
 	  end
 	
@@ -127,7 +143,7 @@ module Fastlane
                                 verify_block: proc do |value|
                                   UI.message '[!] Will be run all analyzers'.blue if (value and value.empty?) or value[0] == 'all'
                                   value.each do |run_analyzer|
-                                    UI.user_error!("The analyzer '#{run_analyzer}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'") unless SUPPORTED_ANALYZER.include? run_analyzer or run_analyzer == 'all'
+                                    UI.user_error!("The analyzer '#{run_analyzer}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'") unless SUPPORTED_ANALYZER.map(&:downcase).include? run_analyzer.downcase or run_analyzer == 'all'
                                   end
                                 end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
@@ -151,11 +167,11 @@ module Fastlane
                                     optional: true,
                                     type: Array),
           FastlaneCore::ConfigItem.new(key: :cpd_language,
-                                  description: "Language used in files that will be inspected on copy paste",
-                                  optional: false,
+                                  description: "[optional] Language used in files that will be inspected on copy paste.\nSupported analyzers: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or don't set if you need any other language",
+                                  optional: true,
                                   type: String,
                                   verify_block: proc do |value|
-                                    UI.user_error!("Language '#{value}' is not supported.  Supported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN}") unless Actions::CpdAnalyzerAction::SUPPORTED_LAN.include? value
+                                    UI.user_error!("Language '#{value}' is not supported.\nSupported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or empty if you need any other language") unless Actions::CpdAnalyzerAction::SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or not value
                                   end),
           # next parameters are optional, but some of them are required in analyzer if it has to be run
           # parameters for Ruby analyzer

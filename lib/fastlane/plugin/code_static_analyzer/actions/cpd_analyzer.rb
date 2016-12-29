@@ -12,6 +12,7 @@ module Fastlane
 
       def self.run(params)
         UI.header 'Step cpd_analyzer'  
+        Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.methodA
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
         
         # checking files for analysing 
@@ -27,13 +28,13 @@ module Fastlane
         temp_result_file = "#{result_dir_path}/temp_copypaste.xml"
         result_file = "#{result_dir_path}/codeAnalysResults_cpd.xml"
         tokens = params[:tokens]
-        files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true) #CpdAnalyzerAction
+        files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
         lan = params[:language]
-        exclude_files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)#CpdAnalyzerAction
-
-        lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
-        run_script_path = File.join(lib_path, "assets/cpd_code_analys.sh")
-        run_script = "bundle exec #{run_script_path} '#{temp_result_file}' #{tokens} '#{files}' '#{exclude_files}' '#{lan}'"
+        exclude_files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)
+        run_script = "bundle exec pmd cpd --minimum-tokens #{tokens} --files #{files}"
+        run_script += " --exclude #{exclude_files}" unless exclude_files==''
+        run_script += " --language #{lan}" unless (lan and lan.empty?) or not lan
+        run_script += " --format xml > #{temp_result_file}"
         
         # use analyzer
         Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
@@ -62,7 +63,8 @@ module Fastlane
       def self.details
         # Optional:
         # this is your chance to provide a more detailed description of this action
-        #"You can use this action to do cool things..."
+        "Important: install PMD if you want to use copy paste detector\n" \
+        "Important: Always use 'language' parameter except the needed language isn't available in list of supported languages"
       end
 
       def self.available_options
@@ -92,12 +94,11 @@ module Fastlane
                         type: Array),
           FastlaneCore::ConfigItem.new(key: :language,
                         env_name: "FL_CPD_ANALYZER_FILE_LANGUAGE",
-                        description: "Language used in files that will be inspected on copy paste.  Supported analyzers: #{SUPPORTED_LAN}",
-                        optional: false,
+                        description: "[optional] Language used in files that will be inspected on copy paste.\nSupported analyzers: #{SUPPORTED_LAN} or don't set if you need any other language",
+                        optional: true,
                         type: String,
                         verify_block: proc do |value|
-                          UI.user_error!("No language for CpdAnalyzerAction given, pass using `language` parameter") unless value and !value.empty?
-                          UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN}") unless SUPPORTED_LAN.include? value
+                          UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN} or empty if you need any other language") unless SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or not value
                         end)
         ]
       end
