@@ -7,6 +7,7 @@ module Fastlane
     class CodeStaticAnalyzerAction < Action
       SUPPORTED_ANALYZER = ["xcodeWar", "rubocop", "CPD"]
 	   attr_accessor :checked_pmd
+	   attr_accessor :checked_xcode_param
   
       def self.run(params)
         Actions::CodeStaticAnalyzerAction.is_pmd_installed
@@ -16,12 +17,15 @@ module Fastlane
         analyzers = SUPPORTED_ANALYZER if (analyzers and analyzers.empty?) or analyzers[0] == 'all'
         ruby_files = params[:ruby_files]
         xcode_project = params[:xcode_project_name]
+        xcode_workspace = params[:xcode_workspace_name]
         
         # use additional checks for optional parameters, but required in specific analyzer
         analyzers.each do |analyzer|
           case analyzer
           when 'xcodeWar'
             UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?) and platform!='android'
+            xcode_project = xcode_check_parameters(root_dir, xcode_project, true)
+            xcode_workspace = xcode_check_parameters(root_dir, xcode_workspace, false)
           end
         end
         
@@ -44,8 +48,8 @@ module Fastlane
 	        if platform!="android"
               status_static = Actions::WarningAnalyzerAction.run(
                                     result_dir: params[:result_dir],
-                                    xcode_project_name: params[:xcode_project_name],
-                                    xcode_workspace_name: params[:xcode_workspace_name]) 
+                                    xcode_project_name: xcode_project,
+                                    xcode_workspace_name: xcode_workspace) 
             end
           when 'rubocop'
             status_rubocop = Actions::RubyAnalyzerAction.run(
@@ -64,8 +68,12 @@ module Fastlane
         end
       end
 
-      def self.methodA
+      def self.checked_pmd
         @checked_pmd
+      end
+      
+      def self.checked_xcode
+        @checked_xcode_param
       end
   
       def self.status_to_boolean(var)
@@ -112,6 +120,23 @@ module Fastlane
           end
         end
         file_list_str
+      end
+      
+      def self.xcode_check_parameters(root_dir, project_workspace, is_project)
+        @checked_xcode_param = false
+        if Actions.lane_context[SharedValues::PLATFORM_NAME]=='android' 
+          UI.user_error! 'This warning_analyzer not supported for ios platform'
+        else
+          if !project_workspace.empty?   
+    		project_workspace = project_workspace + '.xcworkspace' if !project_workspace.end_with? '.xcworkspace' and !is_project
+         	project_workspace = project_workspace + '.xcodeproj' if !project_workspace.end_with? '.xcodeproj' and is_project
+         	wrong_path = Dir.glob(root_dir+project_workspace).empty?
+         	UI.user_error! "Wrong project name '#{project_workspace}'" if wrong_path and is_project
+         	UI.user_error! "Wrong workspace name '#{project_workspace}'" if wrong_path and !is_project
+          end   
+          @checked_xcode_param = true  
+          project_workspace 
+       end 
       end
       
       def self.description
@@ -183,17 +208,11 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :xcode_project_name, # required in analyzer
                                  description: "[optional] Xcode project name in work directory",
                                  optional: true,
-                                 type: String,
-                                 verify_block: proc do |value|
-                                   UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj' and !value.empty? and Actions.lane_context[SharedValues::PLATFORM_NAME]!='android'
-                                 end),
+                                 type: String),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
                                  description: "[optional] Xcode workspace name in work directory",
                                  optional: true,
-                                 type: String,
-                                 verify_block: proc do |value|
-                                   UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace' and !value.empty? and Actions.lane_context[SharedValues::PLATFORM_NAME]!='android'
-                                 end)
+                                 type: String)
         ]
       end
 

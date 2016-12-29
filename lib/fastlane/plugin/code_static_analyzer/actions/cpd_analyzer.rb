@@ -12,7 +12,7 @@ module Fastlane
 
       def self.run(params)
         UI.header 'Step cpd_analyzer'  
-        Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.methodA
+        Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.checked_pmd
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
         
         # checking files for analysing 
@@ -45,6 +45,7 @@ module Fastlane
                                                    end)
         status = $?.exitstatus
         # prepare results
+        raise 'CPD analyzer run failed. Check configuration' if Dir.glob(temp_result_file).empty? 
         xml_content = JunitParser.parse_xml(temp_result_file)
         junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
         JunitParser.create_junit_xml(junit_xml, result_file)

@@ -35,6 +35,7 @@ module Fastlane
         status = $?.exitstatus
         
         # prepare results
+        raise 'Ruby analyzer run failed. Check configuration' if Dir.glob(temp_result_file).empty?
         xml_content = JunitParser.parse_json(temp_result_file)
         junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
         JunitParser.create_junit_xml(junit_xml, result_file)

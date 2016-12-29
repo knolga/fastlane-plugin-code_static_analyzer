@@ -15,7 +15,9 @@ module Fastlane
          
         # checking files for analysing 
         workspace = params[:xcode_workspace_name]
+        workspace = xcode_check_parameters(work_dir, workspace, false) unless Actions::CodeStaticAnalyzerAction.checked_xcode
         project = params[:xcode_project_name]
+        project = xcode_check_parameters(work_dir, project, true) unless Actions::CodeStaticAnalyzerAction.checked_xcode
         Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, project, 'xcode_project_name') 
         is_workspace = false
         if workspace and !workspace.empty?
@@ -40,11 +42,10 @@ module Fastlane
         project_workspace = workspace if is_workspace
         
         project_info = Xcodeproj::Project.open(project.to_s)
-      #  project_info.targets.each do |target|
-        ['mobilecasino'].each do |target|
-          Formatter.xcode_format(target)#.name)
+        project_info.targets.each do |target|
+          Formatter.xcode_format(target.name)
           
-          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}" #.name
+          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target.name} '#{temp_result_file}' #{is_workspace}" 
 
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                          print_all: false,
@@ -60,7 +61,8 @@ module Fastlane
           else
             status_static_arr.push(0)
           end
-          xml_content += JunitParser.parse_xcode_log(temp_result_file, target, is_warnings)#.name
+          raise "Warning analyzer run failed (on sceme '#{target}'). Check configuration" if Dir.glob(temp_result_file).empty?
+          xml_content += JunitParser.parse_xcode_log(temp_result_file, target.name, is_warnings)
         end
         
         # prepare results
@@ -105,16 +107,12 @@ module Fastlane
                            type: String,
                            verify_block: proc do |value|
                              UI.user_error!("No project name for WarningAnalyzerAction given, pass using `project_name` parameter") unless value and !value.empty?
-                             UI.user_error!("Wrong project extention '#{value}'. Need to be 'xcodeproj'") unless value.end_with? '.xcodeproj'
                            end),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
                            env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
                            description: "[optional] Xcode workspace name in work directory",
                            optional: true,
-                           type: String,
-                           verify_block: proc do |value|
-                             UI.user_error!("Wrong workspace extention '#{value}'. Need to be 'xcworkspace'") unless value.end_with? '.xcworkspace'
-                           end)
+                           type: String)
         ]
       end
 
