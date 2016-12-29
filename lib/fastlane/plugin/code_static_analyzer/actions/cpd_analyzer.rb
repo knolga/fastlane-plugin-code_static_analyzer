@@ -3,9 +3,9 @@ module Fastlane
     module SharedValues
       CPD_ANALYZER_STATUS = :CPD_ANALYZER_STATUS
     end
-    
-    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/formatter.rb'
-    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/junit_parser.rb'
+
+    require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
+    require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
 
     class CpdAnalyzerAction < Action
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']

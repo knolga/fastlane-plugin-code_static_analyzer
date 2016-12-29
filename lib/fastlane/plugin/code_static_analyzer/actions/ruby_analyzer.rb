@@ -4,8 +4,8 @@ module Fastlane
       RUBY_ANALYZER_STATUS = :RUBY_ANALYZER_STATUS
     end
 
-    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/formatter.rb'
-    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/junit_parser.rb'
+    require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
+    require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
    
     class RubyAnalyzerAction < Action
       def self.run(params)

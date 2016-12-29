@@ -5,8 +5,8 @@ module Fastlane
       WARNING_ANALYZER_STATUS = :WARNING_ANALYZER_STATUS
     end
 
-    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/formatter.rb'
-    require File.join Helper.gem_path('fastlane-plugin-code_static_analyzer'), 'lib/assets/junit_parser.rb'
+    require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
+    require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
     
     class WarningAnalyzerAction < Action
       def self.run(params)
@@ -26,8 +26,9 @@ module Fastlane
         # prepare script and metadata for saving results  
         result_dir_path = "#{work_dir}#{params[:result_dir]}"
         FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
-        lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
-        run_script_path = File.join(lib_path, "assets/code_analys.sh")
+        #lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
+        #File.join(lib_path, "assets/code_analys.sh")
+        run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/code_analys.sh" 
 
         status_static_arr = []
         xml_content = ''
