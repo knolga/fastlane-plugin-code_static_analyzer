@@ -105,10 +105,10 @@ module Fastlane
 	  def self.add_root_path(root, file_list, is_inspected)
         file_list_str = ''
         if file_list.nil? || file_list.empty?
-          file_list_str = "#{root}" if is_inspected
+          file_list_str = "'#{root}'" if is_inspected
         else
           file_list.each do |file|
-            file_list_str += "#{root}#{file} "
+            file_list_str += "'#{root}#{file}' "
           end
         end
         file_list_str

@@ -18,10 +18,10 @@ IN_WORKSPACE=$4
 #analyze code (build in xcode tools)
 if $IN_WORKSPACE; then
   xcodebuild -scheme $BUILD_LANE -workspace $WORKSPACE_PROJECT clean analyze |
-  tee ${LOG} | 
+  tee "$LOG" | 
   xcpretty
 else
   xcodebuild -scheme $BUILD_LANE -project $WORKSPACE_PROJECT clean analyze |
-  tee ${LOG} | 
+  tee "$LOG" | 
   xcpretty
 fi

@@ -24,7 +24,7 @@ module Fastlane
         temp_result_file = "#{result_dir_path}/temp_ruby.json"
         result_file = "#{result_dir_path}/codeAnalysResults_ruby.xml"
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true) 
-        run_script = "bundle exec rubocop -f j #{files} > #{temp_result_file}"
+        run_script = "bundle exec rubocop -f j #{files} | tee '#{temp_result_file}'"
 
         # use analyzer
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,

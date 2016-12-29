@@ -34,7 +34,7 @@ module Fastlane
         run_script = "bundle exec pmd cpd --minimum-tokens #{tokens} --files #{files}"
         run_script += " --exclude #{exclude_files}" unless exclude_files==''
         run_script += " --language #{lan}" unless (lan and lan.empty?) or not lan
-        run_script += " --format xml > #{temp_result_file}"
+        run_script += " --format xml | tee '#{temp_result_file}'"
         
         # use analyzer
         Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)

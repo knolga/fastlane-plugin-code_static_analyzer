@@ -44,7 +44,7 @@ module Fastlane
         ['mobilecasino'].each do |target|
           Formatter.xcode_format(target)#.name)
           
-          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} #{temp_result_file} #{is_workspace}" #.name
+          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}" #.name
 
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                          print_all: false,
