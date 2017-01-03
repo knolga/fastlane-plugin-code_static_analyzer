@@ -103,11 +103,17 @@ module JunitParser
       File.open(file).each do |line|
         if line =~ /warning:|error:/
           warning_params = line.split(':')
+          if warning_params.count == 5
           error_text += construct_failure_mes(
             ['Error ClassType', 'Error in File', 'Error Line', 'Error Message'],
             [get_failure_type(warning_params[4]), warning_params[0].tr('<', '').tr('>', ''),
              "#{warning_params[1]}:#{warning_params[2]}", warning_params[4].tr("\n", '')]
           )
+          else
+          error_text += construct_failure_mes(
+            ['Error ClassType', 'Error Message'],
+            ['-W', line.tr("\n", '')]) 
+          end
         end
         next unless line =~ /BCEROR/
         error_text += construct_failure_mes(['Error ClassType', 'Error in File', 'Error Message'],

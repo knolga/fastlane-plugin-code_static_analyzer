@@ -5,26 +5,19 @@ module Fastlane
       WARNING_ANALYZER_STATUS = :WARNING_ANALYZER_STATUS
     end
 
-    require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
-    require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
-    
     class WarningAnalyzerAction < Action
       def self.run(params)
-        UI.header 'Step warning_analyzer'
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
          
         # checking files for analysing 
         workspace = params[:xcode_workspace_name]
-        workspace = xcode_check_parameters(work_dir, workspace, false) unless Actions::CodeStaticAnalyzerAction.checked_xcode
         project = params[:xcode_project_name]
-        project = xcode_check_parameters(work_dir, project, true) unless Actions::CodeStaticAnalyzerAction.checked_xcode
-        Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, project, 'xcode_project_name') 
+        checked_params = Actions::CodeStaticAnalyzerAction.xcode_check_parameters(work_dir, project, workspace)
+        project = checked_params[0]
+        workspace = checked_params[1]
         is_workspace = false
-        if workspace and !workspace.empty?
-           Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, workspace, 'xcode_workspace_name') 
-          is_workspace = true
-        end
-        
+        is_workspace = true if workspace and !workspace.empty?
+
         # prepare script and metadata for saving results  
         result_dir_path = "#{work_dir}#{params[:result_dir]}"
         FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
@@ -40,34 +33,41 @@ module Fastlane
         # use analyzer and collect results 
         project_workspace = project
         project_workspace = workspace if is_workspace
-        
+        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action       
         project_info = Xcodeproj::Project.open(project.to_s)
         project_info.targets.each do |target|
           Formatter.xcode_format(target.name)
-          
           run_script = "bundle exec #{run_script_path} #{project_workspace} #{target.name} '#{temp_result_file}' #{is_workspace}" 
-
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
-                                         print_all: false,
-                                         print_command: false,
-                                         error: proc do |error_output|
-                                           # handle error here
-                                         end)
-          file = File.read(temp_result_file)
-          UI.important "wrong profiles. Code isn't checked" if file =~ /BCEROR/
-          is_warnings = file =~ /warning:|error:|BCEROR/
-          if is_warnings
+                                        print_all: false,
+                                        print_command: false,
+                                        error: proc do |error_output|
+                                          # handle error here
+                                        end)
+
+          Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
+          if Dir.glob(temp_result_file).empty? 
+            Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'iOS Warning', temp_result_file)
+            Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
             status_static_arr.push(1)
           else
-            status_static_arr.push(0)
+            file = File.read(temp_result_file)
+            UI.important "wrong profiles. Code isn't checked" if file =~ /BCEROR/
+            is_warnings = file =~ /warning:|error:|BCEROR/
+            if is_warnings
+              status_static_arr.push(1)
+            else
+              status_static_arr.push(0)
+            end
+            xml_content += JunitParser.parse_xcode_log(temp_result_file, target.name, is_warnings)
           end
-          raise "Warning analyzer run failed (on sceme '#{target}'). Check configuration" if Dir.glob(temp_result_file).empty?
-          xml_content += JunitParser.parse_xcode_log(temp_result_file, target.name, is_warnings)
         end
         
         # prepare results
-        junit_xml = JunitParser.add_testsuite('xcode warnings', xml_content)
-        JunitParser.create_junit_xml(junit_xml, result_file)
+        if !Dir.glob(temp_result_file).empty?  
+          junit_xml = JunitParser.add_testsuite('xcode warnings', xml_content)
+          JunitParser.create_junit_xml(junit_xml, result_file)
+        end
         status = if status_static_arr.any? { |x| x > 0 }
                    1
                  else

@@ -4,12 +4,8 @@ module Fastlane
       RUBY_ANALYZER_STATUS = :RUBY_ANALYZER_STATUS
     end
 
-    require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
-    require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
-   
     class RubyAnalyzerAction < Action
       def self.run(params)
-        UI.header 'Step ruby_analyzer'
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
         
         # checking files for analysing
@@ -35,10 +31,16 @@ module Fastlane
         status = $?.exitstatus
         
         # prepare results
-        raise 'Ruby analyzer run failed. Check configuration' if Dir.glob(temp_result_file).empty?
-        xml_content = JunitParser.parse_json(temp_result_file)
-        junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
-        JunitParser.create_junit_xml(junit_xml, result_file)
+        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
+        if Dir.glob(temp_result_file).empty? 
+          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file)
+          Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
+          status = 1
+        else 
+          xml_content = JunitParser.parse_json(temp_result_file)
+          junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
+          JunitParser.create_junit_xml(junit_xml, result_file)
+        end
 
         Actions.lane_context[SharedValues::RUBY_ANALYZER_STATUS] = status
       end

@@ -4,14 +4,10 @@ module Fastlane
       CPD_ANALYZER_STATUS = :CPD_ANALYZER_STATUS
     end
 
-    require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
-    require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
-
     class CpdAnalyzerAction < Action
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
 
       def self.run(params)
-        UI.header 'Step cpd_analyzer'  
         Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.checked_pmd
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
         
@@ -45,11 +41,16 @@ module Fastlane
                                                    end)
         status = $?.exitstatus
         # prepare results
-        raise 'CPD analyzer run failed. Check configuration' if Dir.glob(temp_result_file).empty? 
-        xml_content = JunitParser.parse_xml(temp_result_file)
-        junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
-        JunitParser.create_junit_xml(junit_xml, result_file)
-
+        if Dir.glob(temp_result_file).empty? 
+          Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
+          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Copy paste', temp_result_file)
+          Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
+          status = 1
+        else 
+          xml_content = JunitParser.parse_xml(temp_result_file)
+          junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
+          JunitParser.create_junit_xml(junit_xml, result_file)
+        end
         Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
       end
 
