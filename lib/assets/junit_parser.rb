@@ -70,7 +70,7 @@ module JunitParser
   def self.insert_attribute(attribute, value)
     value == '' ? '' : "#{attribute}='#{value}'"
   end
-  
+
   def self.add_code(codefragment)
     "<![CDATA[#{codefragment}]]>"
   end
@@ -108,21 +108,22 @@ module JunitParser
         if line =~ /warning:|error:/
           warning_params = line.split(':')
           if warning_params.count == 5
-          error_text += construct_failure_mes(
-            ['Error ClassType', 'Error in File', 'Error Line', 'Error Message'],
-            [get_failure_type(warning_params[4]), warning_params[0].tr('<', '').tr('>', ''),
-             "#{warning_params[1]}:#{warning_params[2]}", warning_params[4].tr("\n", '')]
-          )
+            error_text += construct_failure_mes(
+              ['Error ClassType', 'Error in File', 'Error Line', 'Error Message'],
+              [get_failure_type(warning_params[4]), warning_params[0].tr('<', '').tr('>', ''),
+               "#{warning_params[1]}:#{warning_params[2]}", warning_params[4].tr("\n", '')]
+            )
           else
-          error_text += construct_failure_mes(
-            ['Error ClassType', 'Error Message'],
-            ['-W', line.tr("\n", '')]) 
+            error_text += construct_failure_mes(
+              ['Error ClassType', 'Error Message'],
+              ['-W', line.tr("\n", '')]
+            )
           end
         end
         next unless line =~ /BCEROR/
         error_text += construct_failure_mes(['Error ClassType', 'Error in File', 'Error Message'],
-                                                                       [get_failure_type(line), 'project configuration',
-                                                                        line.tr("\n", '')])
+                                            [get_failure_type(line), 'project configuration',
+                                             line.tr("\n", '')])
       end
       failures = add_failure('', '', error_text)
       add_failed_testcase(project, failures)
@@ -206,7 +207,7 @@ module JunitParser
     else
       parsed_files = parse_inspected_files(duplications['file'])
       failure = add_failure("lines:#{duplications['lines']} tokens:#{duplications['tokens']} #{xml_level(3)}files:#{parsed_files}", '',
-                                                       "\n #{add_code(duplications['codefragment'])}")
+                            "\n #{add_code(duplications['codefragment'])}")
       xml += add_failed_testcase('single duplication', failure)
     end
     xml

@@ -6,14 +6,14 @@ module Fastlane
 
     class WarningAnalyzerAction < Action
       def self.run(params)
-        UI.header ('iOS warning analyzer') if Actions::CodeStaticAnalyzerAction.run_from_main_action
-        work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
-         
-        # checking files for analysing 
+        UI.header 'iOS warning analyzer' if Actions::CodeStaticAnalyzerAction.run_from_main_action
+        work_dir = Actions::CodeStaticAnalyzerAction.work_dir
+
+        # checking files for analysing
         workspace = params[:xcode_workspace_name]
         project = params[:xcode_project_name]
         targets = params[:xcode_targets]
-        unless Actions::CodeStaticAnalyzerAction.run_from_main_action 
+        unless Actions::CodeStaticAnalyzerAction.run_from_main_action
           checked_params = Actions::CodeStaticAnalyzerAction.xcode_check_parameters(work_dir, project, workspace, targets)
           project = checked_params[0]
           workspace = checked_params[1]
@@ -22,26 +22,25 @@ module Fastlane
         is_workspace = false
         is_workspace = true if workspace and !workspace.empty?
 
-        # prepare script and metadata for saving results  
+        # prepare script and metadata for saving results
         result_dir_path = "#{work_dir}#{params[:result_dir]}"
         FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
-        #lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
-        #File.join(lib_path, "assets/code_analys.sh")
-        run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/code_analys.sh" 
+        # lib_path = File.join(Helper.gem_path('fastlane-plugin-code_static_analyzer'), "lib")
+        # File.join(lib_path, "assets/code_analys.sh")
+        run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/code_analys.sh"
 
         status_static_arr = []
         xml_content = ''
-        temp_result_file = "#{result_dir_path}/temp_warnings.log" 
+        temp_result_file = "#{result_dir_path}/temp_warnings.log"
         result_file = "#{result_dir_path}/codeAnalysResults_warning.xml"
 
-        # use analyzer and collect results 
+        # use analyzer and collect results
         project_workspace = project
         project_workspace = workspace if is_workspace
-        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
-        UI.success "run: #{targets}"    
+        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
         targets.each do |target|
           Formatter.xcode_format(target)
-          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}" 
+          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}"
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                         print_all: false,
                                         print_command: false,
@@ -49,9 +48,9 @@ module Fastlane
                                           # handle error here
                                         end)
 
-          Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
-          if Dir.glob(temp_result_file).empty? 
-            Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'iOS Warning', temp_result_file)
+          Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
+          if Dir.glob(temp_result_file).empty?
+            Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'iOS Warning', temp_result_file, '')
             Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
             status_static_arr.push(1)
           else
@@ -66,9 +65,9 @@ module Fastlane
             xml_content += JunitParser.parse_xcode_log(temp_result_file, target, is_warnings)
           end
         end
-        
+
         # prepare results
-        if !Dir.glob(temp_result_file).empty?  
+        unless Dir.glob(temp_result_file).empty?
           junit_xml = JunitParser.add_testsuite('xcode warnings', xml_content)
           JunitParser.create_junit_xml(junit_xml, result_file)
         end
@@ -92,7 +91,7 @@ module Fastlane
       def self.details
         # Optional:
         # this is your chance to provide a more detailed description of this action
-        #"You can use this action to do cool things..."
+        # "You can use this action to do cool things..."
       end
 
       def self.available_options
@@ -150,7 +149,7 @@ module Fastlane
         #
         #  [:ios, :mac].include?(platform)
         #
-		[:ios, :mac].include?(platform)
+        [:ios, :mac].include?(platform)
       end
     end
   end

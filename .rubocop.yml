@@ -88,6 +88,9 @@ Metrics/AbcSize:
 Metrics/MethodLength:
   Enabled: false
 
+Metrics/ModuleLength:
+  Max: 250
+
 Metrics/CyclomaticComplexity:
   Enabled: false
 
@@ -125,7 +128,7 @@ Metrics/ParameterLists:
   Max: 17
 
 Metrics/PerceivedComplexity:
-  Max: 18
+  Max: 19
 
 # Sometimes it's easier to read without guards
 Style/GuardClause:

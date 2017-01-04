@@ -8,17 +8,17 @@ module Fastlane
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
 
       def self.run(params)
-        UI.header ('CPD analyzer') if Actions::CodeStaticAnalyzerAction.run_from_main_action
+        UI.header 'CPD analyzer' if Actions::CodeStaticAnalyzerAction.run_from_main_action
         Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.checked_pmd
-        work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
-        
-        # checking files for analysing 
+        work_dir = Actions::CodeStaticAnalyzerAction.work_dir
+
+        # checking files for analysing
         files_to_exclude = params[:cpd_files_to_exclude]
         files_to_inspect = params[:cpd_files_to_inspect]
         UI.message '[!] CPD analyzer will be run for all files in work directory'.blue if !files_to_inspect or files_to_inspect.empty?
         Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, files_to_exclude, 'cpd_files_to_exclude') if files_to_exclude
         Actions::CodeStaticAnalyzerAction.check_file_exist(work_dir, files_to_inspect, 'cpd_files_to_inspect') if files_to_inspect
-       
+
         # prepare script and metadata for saving results
         result_dir_path = "#{work_dir}#{params[:result_dir]}"
         FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
@@ -29,11 +29,11 @@ module Fastlane
         lan = params[:language]
         exclude_files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)
         run_script = " pmd cpd --minimum-tokens #{tokens} --files #{files}"
-        run_script += " --exclude #{exclude_files}" unless exclude_files==''
-        run_script += " --language #{lan}" unless (lan and lan.empty?) or not lan
+        run_script += " --exclude #{exclude_files}" unless exclude_files == ''
+        run_script += " --language #{lan}" unless (lan and lan.empty?) or !lan
         run_script += " --format xml"
         run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
-        run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"   
+        run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
         # use analyzer
         Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
@@ -44,18 +44,18 @@ module Fastlane
         status = $?.exitstatus
 
         # prepare results
-        if Dir.glob(temp_result_file).empty?
-          status = 1 
+        if Dir.glob(temp_result_file).empty? or status == 1
           Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
-          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Copy paste', temp_result_file)
+          info = (status == 1) ? "Couldn't understand command line parameters or CPD exited with an exception" : ''
+          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Copy paste', temp_result_file, info)
           Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
-        else 
+          status = 1
+        else
           status = 0 if File.read(temp_result_file).empty?
           xml_content = JunitParser.parse_xml(temp_result_file)
           junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
           JunitParser.create_junit_xml(junit_xml, result_file)
         end
-     #   UI.error status
         Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
       end
 
@@ -105,7 +105,7 @@ module Fastlane
                         optional: true,
                         type: String,
                         verify_block: proc do |value|
-                          UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN} or empty if you need any other language") unless SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or not value
+                          UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN} or empty if you need any other language") unless SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or !value
                         end)
         ]
       end

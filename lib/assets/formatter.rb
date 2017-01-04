@@ -5,7 +5,7 @@
 # in needed file paste string: require './path-to-file/output_looking.rb
 
 # Use to prepare formatted output
-module Formatter  
+module Formatter
   def self.return_status(mystatus)
     puts light_blue(">>> Exit command status: #{mystatus}")
   end
@@ -22,11 +22,10 @@ module Formatter
     puts 'format        : xml'
     puts "output_file   : #{result_file}"
   end
-  
+
   # String colorization
   # call UI.message Actions::FormatterAction.light_blue(text)
   def self.light_blue(mytext)
     "\e[36m#{mytext}\e[0m"
   end
 end
-

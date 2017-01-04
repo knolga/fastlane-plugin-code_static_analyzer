@@ -2,7 +2,7 @@ module Fastlane
   require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
   require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
   require 'xcodeproj'
-  
+
   module Actions
     module SharedValues
       ANALYZER_STATUS = :ANALYZER_STATUS
@@ -11,17 +11,16 @@ module Fastlane
     class CodeStaticAnalyzerAction < Action
       SUPPORTED_ANALYZER = ["xcodeWar", "rubocop", "CPD"]
       RESULT_FILE = 'codeAnalysResults_analyzers.xml'
-	  attr_accessor :checked_pmd, :checked_xcode_param, :xml_content, :run_main
+      attr_accessor :checked_pmd, :checked_xcode_param, :xml_content, :run_main
 
       def self.run(params)
         @run_main = true
         Actions::CodeStaticAnalyzerAction.is_pmd_installed
         platform = Actions.lane_context[SharedValues::PLATFORM_NAME].to_s
         @xml_content = ''
-        root_dir = get_work_dir
+        root_dir = work_dir
         analyzers = params[:analyzers]
         analyzers = SUPPORTED_ANALYZER if (analyzers and analyzers.empty?) or analyzers[0] == 'all'
-        ruby_files = params[:ruby_files]
         xcode_project = params[:xcode_project_name]
         xcode_workspace = params[:xcode_workspace_name]
         xcode_targets = params[:xcode_targets]
@@ -29,44 +28,47 @@ module Fastlane
         analyzers.each do |analyzer|
           case analyzer.downcase
           when 'xcodewar'
-            UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?) and platform!='android'
+            UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?) and platform != 'android'
             checked_params = xcode_check_parameters(root_dir, xcode_project, xcode_workspace, xcode_targets)
             xcode_project = checked_params[0]
             xcode_workspace = checked_params[1]
             xcode_targets = checked_params[2]
           end
         end
-        
+
         status_rubocop = 0
         status_static = 0
         clear_all_files = "#{root_dir}#{params[:result_dir]}/*.*"
-        #clear_temp_files = "#{root_dir}#{params[:result_dir]}/*temp*.*"
+        # clear_temp_files = "#{root_dir}#{params[:result_dir]}/*temp*.*"
         sh "rm -rf #{clear_all_files}"
-        
+
         # Run alyzers
         status_cpd = Actions::CpdAnalyzerAction.run(
-                              result_dir: params[:result_dir],
-                              tokens: params[:cpd_tokens],
-                              language: params[:cpd_language],
-                              cpd_files_to_inspect: params[:cpd_files_to_inspect],
-                              cpd_files_to_exclude: params[:cpd_files_to_exclude])
+          result_dir: params[:result_dir],
+          tokens: params[:cpd_tokens],
+          language: params[:cpd_language],
+          cpd_files_to_inspect: params[:cpd_files_to_inspect],
+          cpd_files_to_exclude: params[:cpd_files_to_exclude]
+        )
         analyzers.each do |analyzer|
           case analyzer.downcase
           when 'xcodewar'
-	        if platform!="android"
+            if platform != "android"
               status_static = Actions::WarningAnalyzerAction.run(
-                                    result_dir: params[:result_dir],
-                                    xcode_project_name: xcode_project,
-                                    xcode_workspace_name: xcode_workspace,
-                                    xcode_targets: xcode_targets) 
+                result_dir: params[:result_dir],
+                xcode_project_name: xcode_project,
+                xcode_workspace_name: xcode_workspace,
+                xcode_targets: xcode_targets
+              )
             end
           when 'rubocop'
             status_rubocop = Actions::RubyAnalyzerAction.run(
-                                    result_dir: params[:result_dir],
-                                    ruby_files: params[:ruby_files])
+              result_dir: params[:result_dir],
+              ruby_files: params[:ruby_files]
+            )
           end
         end
-        #sh "rm -rf #{clear_temp_files}"
+        # sh "rm -rf #{clear_temp_files}"
 
         create_analyzers_run_result("#{root_dir}#{params[:result_dir]}/") unless @xml_content.empty?
 
@@ -78,44 +80,47 @@ module Fastlane
           Actions.lane_context[SharedValues::ANALYZER_STATUS] = false
         end
       end
-      
+
       def self.start_xml_content
         @xml_content = ""
       end
-    
+
       def self.run_from_main_action
         @run_main
       end
-      
+
       def self.analyzers_xml
         @xml_content
       end
-      
-      def self.checked_pmd
-        @checked_pmd
+
+      class << self
+        attr_reader :checked_pmd
       end
-      
+
       def self.checked_xcode
         @checked_xcode_param
       end
-  
-  	  def self.add_xml_content(root, analyzer_name, temp_result_file)
-  	    UI.error "#{analyzer_name} analyzer failed to create temporary result file. More info in #{root}#{RESULT_FILE}"
-  	    new_line = JunitParser.xml_level(3)
-  	    info = "Try to run command with --verbose to see warnings made by used analyzers"
-  	    failures = JunitParser.add_failure('', 'unexisted result file', "#{new_line}Don't see #{temp_result_file} file.#{new_line}#{info}")
+
+      def self.add_xml_content(root, analyzer_name, temp_result_file, info)
+        UI.error "#{analyzer_name} analyzer failed to create temporary result file. More info in #{root}#{RESULT_FILE}"
+        new_line = JunitParser.xml_level(3)
+        if info.empty?
+          info = "Don't see #{temp_result_file} file.#{new_line}Try to run command with --verbose" \
+  	    " to see warnings made by used analyzers"
+        end
+        failures = JunitParser.add_failure('', 'unexisted result file', "#{new_line}#{info}")
         @xml_content += JunitParser.add_failed_testcase("#{analyzer_name} analyzer crash", failures)
-  	  end
-  	  
-  	  def self.create_analyzers_run_result(result_dir)
-  	    if !@xml_content.empty?
-          junit_xml = JunitParser.add_testsuite('static anlyzers', @xml_content) 
+      end
+
+      def self.create_analyzers_run_result(result_dir)
+        unless @xml_content.empty?
+          junit_xml = JunitParser.add_testsuite('static anlyzers', @xml_content)
           JunitParser.create_junit_xml(junit_xml, "#{result_dir}/#{RESULT_FILE}")
         end
-  	  end
-  	  
+      end
+
       def self.status_to_boolean(var)
-        if var==0 or var=='0' or var==true or var=='true'
+        if var == 0 or var == '0' or var == true or var == 'true'
           return true
         else
           return false
@@ -125,29 +130,29 @@ module Fastlane
       def self.is_pmd_installed
         @checked_pmd = false
         begin
-     	  Actions.sh('type pmd')
-     	rescue
-     	  UI.user_error! 'PMD not installed. Please, install PMD for using copy paste analyzer.'
-     	end
-     	@checked_pmd = true
+         Actions.sh('type pmd')
+       rescue
+         UI.user_error! 'PMD not installed. Please, install PMD for using copy paste analyzer.'
+       end
+        @checked_pmd = true
       end
 
-	  def self.get_work_dir
-	    directory = Dir.pwd
-        directory = directory + "/" unless directory.end_with? "/"
-	  end
-	  
-	  def self.check_file_exist(work_dir, file, parameter_name)
-	    if file.kind_of?(Array)
-	      file.each do |file_path|
-            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless !Dir.glob("#{work_dir}#{file_path}").empty?
+      def self.work_dir
+        directory = Dir.pwd
+        directory + "/" unless directory.end_with? "/"
+      end
+
+      def self.check_file_exist(work_dir, file, parameter_name)
+        if file.kind_of?(Array)
+          file.each do |file_path|
+            UI.user_error!("Unexisted path '#{work_dir}#{file_path}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") if Dir.glob("#{work_dir}#{file_path}").empty?
           end
-	    else
-	      UI.user_error!("Unexisted path '#{work_dir}#{file}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") unless !Dir.glob("#{work_dir}#{file}").empty?
-	    end
-	  end
-	
-	  def self.add_root_path(root, file_list, is_inspected)
+        else
+          UI.user_error!("Unexisted path '#{work_dir}#{file}'. Check '#{parameter_name}' parameter. Files should be relative to work directory '#{work_dir}'") if Dir.glob("#{work_dir}#{file}").empty?
+        end
+      end
+
+      def self.add_root_path(root, file_list, is_inspected)
         file_list_str = ''
         if file_list.nil? || file_list.empty?
           file_list_str = "'#{root}'" if is_inspected
@@ -158,51 +163,51 @@ module Fastlane
         end
         file_list_str
       end
-    
+
       def self.xcode_check_parameters(root_dir, project, workspace, targets)
         @checked_xcode_param = false
-        if Actions.lane_context[SharedValues::PLATFORM_NAME]=='android' 
+        if Actions.lane_context[SharedValues::PLATFORM_NAME] == 'android'
           UI.user_error! 'This warning_analyzer not supported for ios platform'
         else
-          if !project.empty?   
-    		project = project + '.xcodeproj' unless project.end_with? '.xcodeproj'
-         	wrong_path = Dir.glob(root_dir+project).empty?
-         	UI.user_error! "Wrong project name '#{project}'. Check extension if you use it." if wrong_path
+          unless project.empty?
+            project += '.xcodeproj' unless project.end_with? '.xcodeproj'
+            wrong_path = Dir.glob(root_dir + project).empty?
+            UI.user_error! "Wrong project name '#{project}'. Check extension if you use it." if wrong_path
           end
-          
-          if workspace and !workspace.empty?  
-    		workspace = workspace + '.xcworkspace' unless workspace.end_with? '.xcworkspace'
+
+          if workspace and !workspace.empty?
+            workspace += '.xcworkspace' unless workspace.end_with? '.xcworkspace'
           else
-            workspace = project.gsub(".xcodeproj",'') + '.xcworkspace' 
-          end   
-          wrong_path = Dir.glob(root_dir+workspace).empty?
+            workspace = project.gsub(".xcodeproj", '') + '.xcworkspace'
+          end
+          wrong_path = Dir.glob(root_dir + workspace).empty?
           UI.user_error! "Wrong workspace name '#{workspace}'" if wrong_path
-          
-          #check targets
-          available_targets=[]
-          new_targets=[]
+
+          # check targets
+          available_targets = []
+          new_targets = []
           project_info = Xcodeproj::Project.open(project.to_s)
           project_info.targets.each do |target|
             available_targets.push(target.name)
           end
-          if targets and targets.count>0
-            error=[]
-	        targets.each do |currect_target|
-	          next if currect_target.tr(' ','').empty? 
-	          if available_targets.include? currect_target
- 			    new_targets.push(currect_target)  
- 		      else
- 			    error.push(currect_target) 
- 		      end
-		    end
-            UI.user_error!("The #{error} targets don't exist in project.") unless error.count==0
+          if targets and targets.count > 0
+            error = []
+            targets.each do |currect_target|
+              next if currect_target.tr(' ', '').empty?
+              if available_targets.include? currect_target
+                new_targets.push(currect_target)
+              else
+                error.push(currect_target)
+              end
+            end
+            UI.user_error!("The #{error} targets don't exist in project.") unless error.count == 0
           end
-          new_targets = available_targets if new_targets.count==0
-          @checked_xcode_param = true  
-          [project, workspace, new_targets] 
-        end 
+          new_targets = available_targets if new_targets.count == 0
+          @checked_xcode_param = true
+          [project, workspace, new_targets]
+        end
       end
-      
+
       def self.description
         "Runs different Static Analyzers and generate report"
       end
@@ -260,11 +265,10 @@ module Fastlane
                                   optional: true,
                                   type: String,
                                   verify_block: proc do |value|
-                                    UI.user_error!("Language '#{value}' is not supported.\nSupported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or empty if you need any other language") unless Actions::CpdAnalyzerAction::SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or not value
+                                    UI.user_error!("Language '#{value}' is not supported.\nSupported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or empty if you need any other language") unless Actions::CpdAnalyzerAction::SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or !value
                                   end),
-          # next parameters are optional, but some of them are required in analyzer if it has to be run
           # parameters for Ruby analyzer
-          FastlaneCore::ConfigItem.new(key: :ruby_files, 
+          FastlaneCore::ConfigItem.new(key: :ruby_files,
                                    description: "[optional] List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
                                    optional: true,
                                    type: Array),
@@ -279,8 +283,8 @@ module Fastlane
                                  type: String),
           FastlaneCore::ConfigItem.new(key: :xcode_targets,
                                  description: "[optional] List of Xcode targets to inspect",
-                           		 optional: true,
-                           		 type: Array)
+                                optional: true,
+                                type: Array)
         ]
       end
 
@@ -296,7 +300,7 @@ module Fastlane
         # See: https://github.com/fastlane/fastlane/blob/master/fastlane/docs/Platforms.md
         #
         # [:ios, :mac, :android].include?(platform)
-         true
+        true
       end
     end
   end
