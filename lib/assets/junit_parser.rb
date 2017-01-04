@@ -70,6 +70,10 @@ module JunitParser
   def self.insert_attribute(attribute, value)
     value == '' ? '' : "#{attribute}='#{value}'"
   end
+  
+  def self.add_code(codefragment)
+    "<![CDATA[#{codefragment}]]>"
+  end
 
   def self.get_failure_type(str)
     failure_type = str[/\[(.*?)\]/, 1]
@@ -195,14 +199,14 @@ module JunitParser
       index = 1
       duplications.each do |error|
         parsed_files = parse_inspected_files(error['file'])
-        failure = add_failure("lines:#{error['lines']} tokens:#{error['tokens']} #{xml_level(3)}files:#{parsed_files}", '', "\n#{error['codefragment']}")
+        failure = add_failure("lines:#{error['lines']} tokens:#{error['tokens']} #{xml_level(3)}files:#{parsed_files}", '', "\n#{add_code(error['codefragment'])}")
         xml += add_failed_testcase("duplication #{index}", failure)
         index += 1
       end
     else
       parsed_files = parse_inspected_files(duplications['file'])
       failure = add_failure("lines:#{duplications['lines']} tokens:#{duplications['tokens']} #{xml_level(3)}files:#{parsed_files}", '',
-                                                       "\n #{duplications['codefragment']}")
+                                                       "\n #{add_code(duplications['codefragment'])}")
       xml += add_failed_testcase('single duplication', failure)
     end
     xml
