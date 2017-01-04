@@ -1,4 +1,3 @@
-require 'xcodeproj'
 module Fastlane
   module Actions
     module SharedValues
@@ -13,9 +12,13 @@ module Fastlane
         # checking files for analysing 
         workspace = params[:xcode_workspace_name]
         project = params[:xcode_project_name]
-        checked_params = Actions::CodeStaticAnalyzerAction.xcode_check_parameters(work_dir, project, workspace)
-        project = checked_params[0]
-        workspace = checked_params[1]
+        targets = params[:xcode_targets]
+        unless Actions::CodeStaticAnalyzerAction.run_from_main_action 
+          checked_params = Actions::CodeStaticAnalyzerAction.xcode_check_parameters(work_dir, project, workspace, targets)
+          project = checked_params[0]
+          workspace = checked_params[1]
+          targets = checked_params[2]
+        end
         is_workspace = false
         is_workspace = true if workspace and !workspace.empty?
 
@@ -34,11 +37,11 @@ module Fastlane
         # use analyzer and collect results 
         project_workspace = project
         project_workspace = workspace if is_workspace
-        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action       
-        project_info = Xcodeproj::Project.open(project.to_s)
-        project_info.targets.each do |target|
-          Formatter.xcode_format(target.name)
-          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target.name} '#{temp_result_file}' #{is_workspace}" 
+        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
+        UI.success "run: #{targets}"    
+        targets.each do |target|
+          Formatter.xcode_format(target)
+          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}" 
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                         print_all: false,
                                         print_command: false,
@@ -60,7 +63,7 @@ module Fastlane
             else
               status_static_arr.push(0)
             end
-            xml_content += JunitParser.parse_xcode_log(temp_result_file, target.name, is_warnings)
+            xml_content += JunitParser.parse_xcode_log(temp_result_file, target, is_warnings)
           end
         end
         
@@ -113,7 +116,12 @@ module Fastlane
                            env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
                            description: "[optional] Xcode workspace name in work directory. Set it if you use different project & workspace names",
                            optional: true,
-                           type: String)
+                           type: String),
+          FastlaneCore::ConfigItem.new(key: :xcode_targets,
+                           env_name: "FL_WARNING_ANALYZER_TARGETS",
+                           description: "[optional] List of Xcode targets to inspect. By default used all project targets",
+                           optional: true,
+                           type: Array)
         ]
       end
 

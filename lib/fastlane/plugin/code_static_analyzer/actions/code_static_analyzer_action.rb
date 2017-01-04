@@ -1,6 +1,7 @@
 module Fastlane
   require File.join CodeStaticAnalyzer::ROOT, "assets/formatter.rb"
   require File.join CodeStaticAnalyzer::ROOT, "assets/junit_parser.rb"
+  require 'xcodeproj'
   
   module Actions
     module SharedValues
@@ -23,15 +24,16 @@ module Fastlane
         ruby_files = params[:ruby_files]
         xcode_project = params[:xcode_project_name]
         xcode_workspace = params[:xcode_workspace_name]
-        
+        xcode_targets = params[:xcode_targets]
         # use additional checks for optional parameters, but required in specific analyzer
         analyzers.each do |analyzer|
-          case analyzer
-          when 'xcodeWar'
+          case analyzer.downcase
+          when 'xcodewar'
             UI.user_error!("No project name for Warnings Analyzer given. Pass using `xcode_project` or configure analyzers to run using `analyzers`") if !xcode_project or (xcode_project and xcode_project.empty?) and platform!='android'
-            checked_params = xcode_check_parameters(root_dir, xcode_project, xcode_workspace)
+            checked_params = xcode_check_parameters(root_dir, xcode_project, xcode_workspace, xcode_targets)
             xcode_project = checked_params[0]
             xcode_workspace = checked_params[1]
+            xcode_targets = checked_params[2]
           end
         end
         
@@ -49,13 +51,14 @@ module Fastlane
                               cpd_files_to_inspect: params[:cpd_files_to_inspect],
                               cpd_files_to_exclude: params[:cpd_files_to_exclude])
         analyzers.each do |analyzer|
-          case analyzer
-          when 'xcodeWar'
+          case analyzer.downcase
+          when 'xcodewar'
 	        if platform!="android"
               status_static = Actions::WarningAnalyzerAction.run(
                                     result_dir: params[:result_dir],
                                     xcode_project_name: xcode_project,
-                                    xcode_workspace_name: xcode_workspace) 
+                                    xcode_workspace_name: xcode_workspace,
+                                    xcode_targets: xcode_targets) 
             end
           when 'rubocop'
             status_rubocop = Actions::RubyAnalyzerAction.run(
@@ -156,26 +159,48 @@ module Fastlane
         file_list_str
       end
     
-      def self.xcode_check_parameters(root_dir, project, workspace)
+      def self.xcode_check_parameters(root_dir, project, workspace, targets)
         @checked_xcode_param = false
         if Actions.lane_context[SharedValues::PLATFORM_NAME]=='android' 
           UI.user_error! 'This warning_analyzer not supported for ios platform'
         else
-          if workspace and !workspace.empty?  
-    		workspace = workspace + '.xcworkspace' unless workspace.end_with? '.xcworkspace'
-          else
-            workspace = project + '.xcworkspace' 
-          end   
-          wrong_path = Dir.glob(root_dir+workspace).empty?
-          UI.user_error! "Wrong workspace name '#{workspace}'" if wrong_path
           if !project.empty?   
     		project = project + '.xcodeproj' unless project.end_with? '.xcodeproj'
          	wrong_path = Dir.glob(root_dir+project).empty?
-         	UI.user_error! "Wrong project name '#{project}'" if wrong_path
+         	UI.user_error! "Wrong project name '#{project}'. Check extension if you use it." if wrong_path
           end
+          
+          if workspace and !workspace.empty?  
+    		workspace = workspace + '.xcworkspace' unless workspace.end_with? '.xcworkspace'
+          else
+            workspace = project.gsub(".xcodeproj",'') + '.xcworkspace' 
+          end   
+          wrong_path = Dir.glob(root_dir+workspace).empty?
+          UI.user_error! "Wrong workspace name '#{workspace}'" if wrong_path
+          
+          #check targets
+          available_targets=[]
+          new_targets=[]
+          project_info = Xcodeproj::Project.open(project.to_s)
+          project_info.targets.each do |target|
+            available_targets.push(target.name)
+          end
+          if targets and targets.count>0
+            error=[]
+	        targets.each do |currect_target|
+	          next if currect_target.tr(' ','').empty? 
+	          if available_targets.include? currect_target
+ 			    new_targets.push(currect_target)  
+ 		      else
+ 			    error.push(currect_target) 
+ 		      end
+		    end
+            UI.user_error!("The #{error} targets don't exist in project.") unless error.count==0
+          end
+          new_targets = available_targets if new_targets.count==0
           @checked_xcode_param = true  
-          [project, workspace] 
-       end 
+          [project, workspace, new_targets] 
+        end 
       end
       
       def self.description
@@ -251,7 +276,11 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
                                  description: "[optional] Xcode workspace name in work directory",
                                  optional: true,
-                                 type: String)
+                                 type: String),
+          FastlaneCore::ConfigItem.new(key: :xcode_targets,
+                                 description: "[optional] List of Xcode targets to inspect",
+                           		 optional: true,
+                           		 type: Array)
         ]
       end
 
