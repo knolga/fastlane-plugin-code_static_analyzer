@@ -7,6 +7,7 @@ module Fastlane
 
     class WarningAnalyzerAction < Action
       def self.run(params)
+        UI.header ('iOS warning analyzer') if Actions::CodeStaticAnalyzerAction.run_from_main_action
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
          
         # checking files for analysing 
@@ -27,7 +28,7 @@ module Fastlane
 
         status_static_arr = []
         xml_content = ''
-        temp_result_file = "#{result_dir_path}/temp_warnings.log" # log_file
+        temp_result_file = "#{result_dir_path}/temp_warnings.log" 
         result_file = "#{result_dir_path}/codeAnalysResults_warning.xml"
 
         # use analyzer and collect results 
@@ -110,7 +111,7 @@ module Fastlane
                            end),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
                            env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
-                           description: "[optional] Xcode workspace name in work directory",
+                           description: "[optional] Xcode workspace name in work directory. Set it if you use different project & workspace names",
                            optional: true,
                            type: String)
         ]

@@ -6,6 +6,7 @@ module Fastlane
 
     class RubyAnalyzerAction < Action
       def self.run(params)
+        UI.header ('Ruby analyzer') if Actions::CodeStaticAnalyzerAction.run_from_main_action
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
         
         # checking files for analysing
@@ -20,8 +21,9 @@ module Fastlane
         temp_result_file = "#{result_dir_path}/temp_ruby.json"
         result_file = "#{result_dir_path}/codeAnalysResults_ruby.xml"
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true) 
-        run_script = "bundle exec rubocop -f j #{files} | tee '#{temp_result_file}'"
-
+        run_script = "bundle exec rubocop -f j #{files}"
+        run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
+        run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
         # use analyzer
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                             print_all: false,
@@ -29,19 +31,18 @@ module Fastlane
                                                      # handle error here
                                                    end)
         status = $?.exitstatus
-        
         # prepare results
-        Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
         if Dir.glob(temp_result_file).empty? 
-          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file)
-          Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
           status = 1
+          Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
+          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file)
+          Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action   
         else 
+          status = 0 if File.read(temp_result_file).empty?
           xml_content = JunitParser.parse_json(temp_result_file)
           junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
           JunitParser.create_junit_xml(junit_xml, result_file)
         end
-
         Actions.lane_context[SharedValues::RUBY_ANALYZER_STATUS] = status
       end
 

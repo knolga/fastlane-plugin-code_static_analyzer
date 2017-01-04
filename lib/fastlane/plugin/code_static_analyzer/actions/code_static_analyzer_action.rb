@@ -66,7 +66,7 @@ module Fastlane
         #sh "rm -rf #{clear_temp_files}"
 
         create_analyzers_run_result("#{root_dir}#{params[:result_dir]}/") unless @xml_content.empty?
-    
+
         if  Actions::CodeStaticAnalyzerAction.status_to_boolean(status_cpd) &&
             Actions::CodeStaticAnalyzerAction.status_to_boolean(status_static) &&
             Actions::CodeStaticAnalyzerAction.status_to_boolean(status_rubocop)
@@ -112,11 +112,10 @@ module Fastlane
   	  end
   	  
       def self.status_to_boolean(var)
-        case var
-        when 1, '1'
-          return false
-        when 0, '0'
+        if var==0 or var=='0' or var==true or var=='true'
           return true
+        else
+          return false
         end
       end
 

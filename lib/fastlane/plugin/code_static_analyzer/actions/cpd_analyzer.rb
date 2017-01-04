@@ -8,6 +8,7 @@ module Fastlane
       SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
 
       def self.run(params)
+        UI.header ('CPD analyzer') if Actions::CodeStaticAnalyzerAction.run_from_main_action
         Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.checked_pmd
         work_dir = Actions::CodeStaticAnalyzerAction.get_work_dir 
         
@@ -27,11 +28,12 @@ module Fastlane
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
         lan = params[:language]
         exclude_files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_exclude, false)
-        run_script = "bundle exec pmd cpd --minimum-tokens #{tokens} --files #{files}"
+        run_script = " pmd cpd --minimum-tokens #{tokens} --files #{files}"
         run_script += " --exclude #{exclude_files}" unless exclude_files==''
         run_script += " --language #{lan}" unless (lan and lan.empty?) or not lan
-        run_script += " --format xml | tee '#{temp_result_file}'"
-        
+        run_script += " --format xml"
+        run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
+        run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"   
         # use analyzer
         Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
@@ -40,17 +42,20 @@ module Fastlane
                                                      # handle error here
                                                    end)
         status = $?.exitstatus
+
         # prepare results
-        if Dir.glob(temp_result_file).empty? 
+        if Dir.glob(temp_result_file).empty?
+          status = 1 
           Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
           Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Copy paste', temp_result_file)
           Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
-          status = 1
         else 
+          status = 0 if File.read(temp_result_file).empty?
           xml_content = JunitParser.parse_xml(temp_result_file)
           junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
           JunitParser.create_junit_xml(junit_xml, result_file)
         end
+     #   UI.error status
         Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
       end
 
