@@ -21,7 +21,7 @@ module Fastlane
         temp_result_file = "#{result_dir_path}/temp_ruby.json"
         result_file = "#{result_dir_path}/codeAnalysResults_ruby.xml"
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
-        run_script = "bundle exec rubocop -f j #{files}"
+        run_script = "bundle exec rubocop -f j -a #{files}"
         run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
         run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
         # use analyzer
@@ -33,10 +33,11 @@ module Fastlane
         status = $?.exitstatus
         # prepare results
         if Dir.glob(temp_result_file).empty?
-          status = 1
+          info = (status == 2) ? "Rubocop return 2: terminates abnormally due to invalid configuration, invalid CLI options, or an internal error" : ''
           Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
           Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file, '')
           Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
+          status = 43
         else
           status = 0 if File.read(temp_result_file).empty?
           xml_content = JunitParser.parse_json(temp_result_file)

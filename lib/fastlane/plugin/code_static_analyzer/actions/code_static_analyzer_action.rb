@@ -158,7 +158,10 @@ module Fastlane
           file_list_str = "'#{root}'" if is_inspected
         else
           file_list.each do |file|
-            file_list_str += "'#{root}#{file}' "
+            file_path = "#{root}#{file}"
+            file_path.tr('//','/')
+            file_path.tr('/./','/')
+            file_list_str += "'#{file_path}' "
           end
         end
         file_list_str

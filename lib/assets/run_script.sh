@@ -8,6 +8,6 @@
 # $2 - filename with extension to store command results
 
 { 
-  eval $1 | tee $2
+  eval $1 | tee "$2"
 } &> /dev/null
 exit $?
