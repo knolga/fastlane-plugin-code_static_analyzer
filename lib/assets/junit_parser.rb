@@ -185,7 +185,7 @@ module JunitParser
     data_read = File.read(file)
     data_hash = Crack::XML.parse(data_read)
 
-    if data_hash.empty?
+    if data_hash.empty? or data_hash['pmd_cpd']==nil
       puts 'empty data_hash'
       add_success_testcase('casino duplications')
     else
