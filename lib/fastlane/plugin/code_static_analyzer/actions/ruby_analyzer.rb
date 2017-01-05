@@ -33,9 +33,9 @@ module Fastlane
         status = $?.exitstatus
         # prepare results
         if Dir.glob(temp_result_file).empty?
-          info = (status == 2) ? "Rubocop return 2: terminates abnormally due to invalid configuration, invalid CLI options, or an internal error" : ''
+          info = (status == 2) ? 'Rubocop return 2: terminates abnormally due to invalid configuration, invalid CLI options, or an internal error' : ''
           Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
-          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file, '')
+          Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file, info)
           Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
           status = 43
         else

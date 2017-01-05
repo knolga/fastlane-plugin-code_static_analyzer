@@ -159,8 +159,8 @@ module Fastlane
         else
           file_list.each do |file|
             file_path = "#{root}#{file}"
-            file_path.tr('//','/')
-            file_path.tr('/./','/')
+            file_path = file_path.sub("//", '/')
+            file_path = file_path.sub("/./", '/')
             file_list_str += "'#{file_path}' "
           end
         end
