@@ -33,7 +33,7 @@ module Fastlane
         status = $?.exitstatus
         # prepare results
         if Dir.glob(temp_result_file).empty?
-          status = 43 #1
+          status = 1
           Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
           Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Ruby', temp_result_file, '')
           Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action

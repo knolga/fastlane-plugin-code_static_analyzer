@@ -6,7 +6,6 @@ module Fastlane
   module Actions
     module SharedValues
       ANALYZER_STATUS = :ANALYZER_STATUS
-      WORK_DIR = :WORK_DIR
     end
 
     class CodeStaticAnalyzerAction < Action
@@ -20,7 +19,6 @@ module Fastlane
         platform = Actions.lane_context[SharedValues::PLATFORM_NAME].to_s
         @xml_content = ''
         root_dir = work_dir
-   Actions.lane_context[SharedValues::WORK_DIR]=root_dir
         analyzers = params[:analyzers]
         analyzers = SUPPORTED_ANALYZER if (analyzers and analyzers.empty?) or analyzers[0] == 'all'
         xcode_project = params[:xcode_project_name]
@@ -293,10 +291,7 @@ module Fastlane
       def self.output
         # Define the shared values you are going to provide
         [
-          [
-            'ANALYZER_STATUS', 'Code analysis result (0 - code is clear, any other value - code include warnings/errors/etc.)',
-            'WORK_DIR', ''
-          ]
+          ['ANALYZER_STATUS', 'Code analysis result (0 - code is clear, any other value - code include warnings/errors/etc.)']
         ]
       end
 
