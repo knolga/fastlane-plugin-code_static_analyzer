@@ -49,7 +49,7 @@ module Fastlane
           info = (status == 1) ? "Couldn't understand command line parameters or CPD exited with an exception" : ''
           Actions::CodeStaticAnalyzerAction.add_xml_content("#{result_dir_path}/", 'Copy paste', temp_result_file, info)
           Actions::CodeStaticAnalyzerAction.create_analyzers_run_result("#{result_dir_path}/") unless Actions::CodeStaticAnalyzerAction.run_from_main_action
-          status = 1
+          status = 43 #1
         else
           status = 0 if File.read(temp_result_file).empty?
           xml_content = JunitParser.parse_xml(temp_result_file)

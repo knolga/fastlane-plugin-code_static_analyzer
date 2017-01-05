@@ -7,6 +7,7 @@
 # $1 - shell script you want to run
 # $2 - filename with extension to store command results
 
+echo "run: eval ${1} | tee ${2}"
 { 
   eval $1 | tee $2
 } &> /dev/null
