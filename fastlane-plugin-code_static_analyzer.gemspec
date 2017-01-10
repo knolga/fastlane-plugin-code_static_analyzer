@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = %q{olgak.kiev@ukr.net}
 
   spec.summary       = %q{Runs different Static Analyzers and generate report}
-  # spec.homepage      = "https://github.com/<GITHUB_USERNAME>/fastlane-plugin-code_static_analyzer"
+  spec.homepage      = "https://github.com/knolga/fastlane-plugin-code_static_analyzer"
   spec.license       = "MIT"
 
   spec.files         = Dir["lib/**/*"] + %w(README.md LICENSE)
