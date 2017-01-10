@@ -216,7 +216,7 @@ module Fastlane
       end
 
       def self.authors
-        ["knolga"]
+        ["olgakn"]
       end
 
       def self.return_value
@@ -245,26 +245,26 @@ module Fastlane
                                 end),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                               env_name: "CSA_RESULT_DIR_NAME",
-                              description: "[optional] Directory's name for storing  analysis results",
+                              description: "Directory's name for storing  analysis results",
                               optional: true,
                               type: String,
                               default_value: 'artifacts'),
           # parameters for CPD analyzer
           FastlaneCore::ConfigItem.new(key: :cpd_tokens,
-                                   description: "[optional] The min number of words in code that is detected as copy paste",
+                                   description: "The min number of words in code that is detected as copy paste",
                                    optional: true,
                                    type: String,
                                    default_value: '100'),
           FastlaneCore::ConfigItem.new(key: :cpd_files_to_inspect,
-                                   description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
+                                   description: "List of files and directories (relative to work directory) to inspect on copy paste",
                                    optional: true,
                                    type: Array),
           FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude,
-                                    description: "[optional] List of path (relative to work directory) to files not to be inspected on copy paste",
+                                    description: "List of files and directories (relative to work directory) not to inspect on copy paste",
                                     optional: true,
                                     type: Array),
           FastlaneCore::ConfigItem.new(key: :cpd_language,
-                                  description: "[optional] Language used in files that will be inspected on copy paste.\nSupported analyzers: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or don't set if you need any other language",
+                                  description: "Language used in files that will be inspected on copy paste.\nSupported analyzers: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or don't set if you need any other language",
                                   optional: true,
                                   type: String,
                                   verify_block: proc do |value|
@@ -272,20 +272,20 @@ module Fastlane
                                   end),
           # parameters for Ruby analyzer
           FastlaneCore::ConfigItem.new(key: :ruby_files,
-                                   description: "[optional] List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
+                                   description: "List of path (relative to work directory) to ruby files to be inspected on warnings & syntax",
                                    optional: true,
                                    type: Array),
           # parameters for Warnings analyzer
           FastlaneCore::ConfigItem.new(key: :xcode_project_name, # required in analyzer
-                                 description: "[optional] Xcode project name in work directory",
+                                 description: "Xcode project name in work directory",
                                  optional: true,
                                  type: String),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
-                                 description: "[optional] Xcode workspace name in work directory",
+                                 description: "Xcode workspace name in work directory",
                                  optional: true,
                                  type: String),
           FastlaneCore::ConfigItem.new(key: :xcode_targets,
-                                 description: "[optional] List of Xcode targets to inspect",
+                                 description: "List of Xcode targets to inspect",
                                 optional: true,
                                 type: Array)
         ]

@@ -40,7 +40,7 @@ module Fastlane
         Actions::CodeStaticAnalyzerAction.start_xml_content unless Actions::CodeStaticAnalyzerAction.run_from_main_action
         targets.each do |target|
           Formatter.xcode_format(target)
-          run_script = "bundle exec #{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}"
+          run_script = "#{run_script_path} #{project_workspace} #{target} '#{temp_result_file}' #{is_workspace}"
           FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                         print_all: false,
                                         print_command: false,
@@ -99,7 +99,7 @@ module Fastlane
         [
           FastlaneCore::ConfigItem.new(key: :result_dir,
                            env_name: "FL_WARNING_ANALYZER_RESULT_DIR",
-                           description: "[optional] Directory's name for storing  analysis results",
+                           description: "Directory's name for storing  analysis results",
                            optional: true,
                            type: String,
                            default_value: 'artifacts'),
@@ -109,16 +109,16 @@ module Fastlane
                            optional: false,
                            type: String,
                            verify_block: proc do |value|
-                             UI.user_error!("No project name for WarningAnalyzerAction given, pass using `project_name` parameter") unless value and !value.empty?
+                             UI.user_error!("No project name for WarningAnalyzerAction given, pass using `xcode_project_name` parameter") unless value and !value.empty?
                            end),
           FastlaneCore::ConfigItem.new(key: :xcode_workspace_name,
                            env_name: "FL_WARNING_ANALYZER_WORKSPACE_NAME",
-                           description: "[optional] Xcode workspace name in work directory. Set it if you use different project & workspace names",
+                           description: "Xcode workspace name in work directory. Set it if you use different project & workspace names",
                            optional: true,
                            type: String),
           FastlaneCore::ConfigItem.new(key: :xcode_targets,
                            env_name: "FL_WARNING_ANALYZER_TARGETS",
-                           description: "[optional] List of Xcode targets to inspect. By default used all project targets",
+                           description: "List of Xcode targets to inspect. By default used all project targets",
                            optional: true,
                            type: Array)
         ]
@@ -137,7 +137,7 @@ module Fastlane
 
       def self.authors
         # So no one will ever forget your contribution to fastlane :) You are awesome btw!
-        ["knolga"]
+        ["olgakn"]
       end
 
       def self.is_supported?(platform)

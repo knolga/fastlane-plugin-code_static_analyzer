@@ -33,7 +33,7 @@ module Fastlane
         run_script += " --language #{lan}" unless (lan and lan.empty?) or !lan
         run_script += " --format xml"
         run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
-        run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
+        run_script = "#{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
         # use analyzer
         Formatter.cpd_format(tokens, lan, exclude_files, temp_result_file, files)
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
@@ -79,29 +79,29 @@ module Fastlane
         [
           FastlaneCore::ConfigItem.new(key: :result_dir,
                         env_name: "FL_CPD_ANALYZER_RESULT_DIR",
-                        description: "[optional] Directory's name for storing  analysis results",
+                        description: "Directory's name for storing  analysis results",
                         optional: true,
                         type: String,
                         default_value: 'artifacts'),
           FastlaneCore::ConfigItem.new(key: :tokens,
                         env_name: "FL_CPD_ANALYZER_TOKENS",
-                        description: "[optional] The min number of words in code that is detected as copy paste",
+                        description: "The min number of words in code that is detected as copy paste",
                         optional: true,
                         type: String,
                         default_value: '100'),
           FastlaneCore::ConfigItem.new(key: :cpd_files_to_inspect,
                         env_name: "FL_CPD_ANALYZER_FILES_TO_INSPECT",
-                        description: "[optional] List of path (relative to work directory) to files to be inspected on copy paste",
+                        description: "List of files and directories (relative to work directory) to inspect on copy paste",
                         optional: true,
                         type: Array),
           FastlaneCore::ConfigItem.new(key: :cpd_files_to_exclude,
                         env_name: "FL_CPD_ANALYZER_FILES_NOT_TO_INSPECT",
-                        description: "[optional] List of path (relative to work directory) to files not to be inspected on copy paste",
+                        description: "List of files and directories (relative to work directory) not to inspect on copy paste",
                         optional: true,
                         type: Array),
           FastlaneCore::ConfigItem.new(key: :language,
                         env_name: "FL_CPD_ANALYZER_FILE_LANGUAGE",
-                        description: "[optional] Language used in files that will be inspected on copy paste.\nSupported analyzers: #{SUPPORTED_LAN} or don't set if you need any other language",
+                        description: "Language used in files that will be inspected on copy paste.\nSupported analyzers: #{SUPPORTED_LAN} or don't set if you need any other language",
                         optional: true,
                         type: String,
                         verify_block: proc do |value|
@@ -123,7 +123,7 @@ module Fastlane
 
       def self.authors
         # So no one will ever forget your contribution to fastlane :) You are awesome btw!
-        ["knolga"]
+        ["olgakn"]
       end
 
       def self.is_supported?(platform)

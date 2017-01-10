@@ -23,7 +23,7 @@ module Fastlane
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
         run_script = "bundle exec rubocop -f j -a #{files}"
         run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
-        run_script = "bundle exec #{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
+        run_script = "#{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
         # use analyzer
         FastlaneCore::CommandExecutor.execute(command: run_script.to_s,
                                             print_all: false,
@@ -68,13 +68,13 @@ module Fastlane
         [
           FastlaneCore::ConfigItem.new(key: :result_dir,
                         env_name: "FL_RUBY_ANALYZER_RESULT_DIR",
-                        description: "[optional] Directory's name for storing  analysis results",
+                        description: "Directory's name for storing  analysis results",
                         optional: true,
                         type: String,
                         default_value: 'artifacts'),
           FastlaneCore::ConfigItem.new(key: :ruby_files,
                         env_name: "FL_RUBY_ANALYZER_FILES_TO_INSPECT",
-                        description: "[optional] List of path (relative to work directory) to ruby files to be inspected",
+                        description: "List of path (relative to work directory) to ruby files to be inspected",
                         optional: true,
                         type: Array)
         ]
@@ -93,7 +93,7 @@ module Fastlane
 
       def self.authors
         # So no one will ever forget your contribution to fastlane :) You are awesome btw!
-        ["knolga"]
+        ["olgakn"]
       end
 
       def self.is_supported?(platform)
