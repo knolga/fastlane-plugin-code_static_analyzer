@@ -104,34 +104,57 @@ module JunitParser
   def self.parse_xcode_log(file, project, is_warn)
     if is_warn
       error_text = ''
+      temp_testcase = ''
       File.open(file).each do |line|
-        if line =~ /warning:|error:/
+        if line =~ /warning:|error:|BCEROR/
+        failure_type = get_failure_type(line)
           warning_params = line.split(':')
           if warning_params.count == 5
-            error_text += construct_failure_mes(
-              ['Error ClassType', 'Error in File', 'Error Line', 'Error Message'],
-              [get_failure_type(warning_params[4]), warning_params[0].tr('<', '').tr('>', ''),
-               "#{warning_params[1]}:#{warning_params[2]}", warning_params[4].tr("\n", '')]
-            )
-          else
-            error_text += construct_failure_mes(
+             error_text = construct_failure_mes(
               ['Error ClassType', 'Error Message'],
-              ['-W', line.tr("\n", '')]
+              [failure_type, warning_params[4].tr("\n", '')]
             )
+            testcase_name = project+':'+warning_params[0].tr('<', '').tr('>', '')+
+               ":#{warning_params[1]}:#{warning_params[2]}"
+          else
+            error_text = construct_failure_mes(
+              ['Error ClassType', 'Error Message'],
+              [failure_type, line.tr("\n", '').gsub('warning:','')]
+            )
+            testcase_name = project
+            testcase_name += ':project configuration' if line =~ /BCEROR/
+            file_info = check_for_file_info(warning_params)
+            testcase_name += ":#{file_info[0]}" unless file_info[0]==nil
+            testcase_name += ":#{file_info[1]}" unless file_info[1]==nil
           end
+          failures = add_failure('', '', error_text)
+          temp_testcase += add_failed_testcase(testcase_name, failures)
         end
-        next unless line =~ /BCEROR/
-        error_text += construct_failure_mes(['Error ClassType', 'Error in File', 'Error Message'],
-                                            [get_failure_type(line), 'project configuration',
-                                             line.tr("\n", '')])
       end
-      failures = add_failure('', '', error_text)
-      add_failed_testcase(project, failures)
+      temp_testcase
     else
       add_success_testcase(project)
     end
   end
-
+  
+  def self.check_for_file_info(text_list)
+    result =[]
+    text_list.each_with_index do |text, i|
+      file = /([a-zA-Z0-9\.]*)?(\/[a-zA-Z0-9\._-]+)*(\.){1}[a-zA-Z0-9\._-]+/.match(text)
+      file = nil if file.to_s =~ /\.{2,}/
+      unless file==nil 
+        next_value=text_list.to_a[i.to_i+1].nil? ? '' : text_list.to_a[i.to_i+1]
+     	line = /[0-9]+/.match(next_value)
+     	if line ==nil
+     	  result=[file]
+     	else
+     	  result=[file, line]
+     	end
+     	break
+      end 
+    end
+    result
+  end
   #####################################################
   # ============== Rubocop-json Parser ================
   #####################################################
