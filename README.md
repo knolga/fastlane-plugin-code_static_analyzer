@@ -16,7 +16,8 @@ This plugins runs different Static Analyzers for checking your code on warnings,
 Each analyzer in this plugin generate separate report `codeAnalysResult_<name of analyzer>.xml` and 
 save result status in shared values `<NAME>_ANALYZER_STATUS`: 0 - code is clear, any other value - code include warnings/errors.
 Finally you can check plugin return value (true='code is clear'/false) to decide what to do next. <br />
-All reports are generated in JUnit format for easier start-up at the CI servers.
+All reports are generated in JUnit format for easier start-up at the CI servers.<br />
+This plugin can be used in pair with CI static code analysis plugins. Check out the `Using CI plugins` section.
 
 ## Important
 - You can configure rubocop analyzer by creating configuration file `.rubocop.yml` in your project (more about rubocop configuration http://rubocop.readthedocs.io/en/latest/cops/)
@@ -25,7 +26,7 @@ All reports are generated in JUnit format for easier start-up at the CI servers.
 ### Specific for copy paste analyzer (CPD)
 - PMD have to be installed on your machine (http://pmd.sourceforge.net/snapshot/usage/installing.html)
 - [!]Pay attention on language parameter: if your code language is available in supported list you have to set this parameter.
- 
+
 ## Actions
 
 `code_static_analyzer` - runs all configured analyzers together (Copy paste analyzer always runs).<br />
@@ -56,7 +57,8 @@ code_static_analyzer(
       xcode_project_name: 'path/to/TestProject',
       xcode_workspace_name: 'path/to/testWorkspace',
       xcode_targets: ['TPClientTarget','TPServerTarget'],
-      ruby_files: 'fastlane/Fastfile'
+      ruby_files: 'fastlane/Fastfile',
+      disable_junit: 'all' # don't create any results in JUnit format
     )
 ````
 Parameter | Description
@@ -71,6 +73,7 @@ Parameter | Description
 `xcode_workspace_name`| *(optional)* Xcode workspace name in work directory. Set it if you use different project & workspace names
 `xcode_targets` | *(optional)* List of Xcode targets to inspect. By default used all targets which are available in project
 `ruby_files` | *(optional)* List of paths to ruby files to be inspected 
+`disable_junit` | *(optional)* List of analysers for which you want to disable results in JUnit format.<br />Supported analyzers: "xcodeWar", "rubocop", "CPD", "all"<br />By default all results will be created in JUnit format.
 
 ### `code_static_analyzer` other examples (full configuration):
 CPD:
@@ -93,7 +96,8 @@ code_static_analyzer(
       cpd_language: 'objectivec',
       cpd_files_to_inspect: %w('path/to/myFiles/' 'path/to/testFiles/'),
       cpd_files_to_exclude: %w('Pods' 'ThirdParty'),
-      ruby_files: 'fastlane/Fastfile'
+      ruby_files: 'fastlane/Fastfile',
+      disable_junit: 'CPD' # results of rubocop analyzer - in JUnit format, CPD analyzer - not in JUnit format
     )
 ````
 CPD + Xcode project warnings:
@@ -110,24 +114,17 @@ code_static_analyzer(
       xcode_targets: ['TPClientTarget','TPServerTarget'],
     )
 ````
+## Using CI plugins
 
-## Run tests for this plugin
-
-To run both the tests, and code style validation, run
-
-```
-rake
-```
-
-To automatically fix many of the styling issues, use
-```
-rubocop -a
-```
+If you want to use CI static code analysis plugins pay attention on type of file which they use. 
+Commonly CI static code analysis plugins don't scan files in JUnit format, so you need to `disable usage of results in JUnit format` (especially for ruby analyzer).
+After that each analyzer in this plugin will generate separate report(s):
+CPD analyzer - `cpd.xml`; Ruby analyzer - `ruby.log`; Warning analyzer - `warnings_<target name>.log`
 
 ## Issues and Feedback
 
 - In some cases CPD can't recognize patterns in file/dir paths like `path/to/files/*.m`
-(about path you may read in CPD documentation: http://pmd.sourceforge.net/snapshot/usage/cpd-usage.html)<br />
+(about path you may read in [CPD documentation](http://pmd.sourceforge.net/snapshot/usage/cpd-usage.html)).<br />
 For any other issues and feedback about this plugin, please submit it to this repository.
 
 ## Troubleshooting
