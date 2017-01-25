@@ -11,7 +11,6 @@ module Fastlane
         UI.header 'CPD analyzer' if Actions::CodeStaticAnalyzerAction.run_from_main_action
         Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.checked_pmd
         work_dir = Actions::CodeStaticAnalyzerAction.work_dir
-
         # checking files for analysing
         files_to_exclude = params[:cpd_files_to_exclude]
         files_to_inspect = params[:cpd_files_to_inspect]
@@ -22,7 +21,7 @@ module Fastlane
         # prepare script and metadata for saving results
         result_dir_path = "#{work_dir}#{params[:result_dir]}"
         FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
-        temp_result_file = "#{result_dir_path}/temp_copypaste.xml"
+        temp_result_file = "#{result_dir_path}/cpd.xml"
         result_file = "#{result_dir_path}/codeAnalysResults_cpd.xml"
         tokens = params[:tokens]
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
@@ -52,9 +51,12 @@ module Fastlane
           status = 43
         else
           status = 0 if File.read(temp_result_file).empty?
-          xml_content = JunitParser.parse_xml(temp_result_file)
-          junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
-          JunitParser.create_junit_xml(junit_xml, result_file)
+          if params[:use_junit_format]
+   		    UI.message 'CPD analyzer generates result in JUnit format'
+            xml_content = JunitParser.parse_xml(temp_result_file)
+            junit_xml = JunitParser.add_testsuite('copypaste', xml_content)
+            JunitParser.create_junit_xml(junit_xml, result_file)
+          end
         end
         Actions.lane_context[SharedValues::CPD_ANALYZER_STATUS] = status
       end
@@ -83,6 +85,12 @@ module Fastlane
                         optional: true,
                         type: String,
                         default_value: 'artifacts'),
+          FastlaneCore::ConfigItem.new(key: :use_junit_format,
+                        env_name: "FL_CPD_ANALYZER_USE_JUNIT_RESULTS",
+                        description: "Generate results in JUnit format.",
+                        optional: true,
+                        type: BOOL,
+                        default_value: true),
           FastlaneCore::ConfigItem.new(key: :tokens,
                         env_name: "FL_CPD_ANALYZER_TOKENS",
                         description: "The min number of words in code that is detected as copy paste",

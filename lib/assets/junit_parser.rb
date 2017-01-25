@@ -59,7 +59,7 @@ module JunitParser
   end
 
   def self.construct_failure_mes(attributes, values)
-    properties = xml_level(0).to_s
+    properties = ''
     attributes.each_with_index do |property, index|
       value = values[index]
       properties += format("#{xml_level(4)}%-18s: %s", property, value) unless value.nil?

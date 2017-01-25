@@ -24,7 +24,15 @@ module Fastlane
         xcode_project = params[:xcode_project_name]
         xcode_workspace = params[:xcode_workspace_name]
         xcode_targets = params[:xcode_targets]
-        # use additional checks for optional parameters, but required in specific analyzer
+        
+        # use additional checks for optional parameters, but required in specific analyzer     
+        exclude_junit = params[:disable_junit]
+        if exclude_junit
+          exclude_junit.each do |exclude_from|
+            UI.error "disable_junit parameter is partly skipped: the analyzer '#{exclude_from}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'" unless SUPPORTED_ANALYZER.map(&:downcase).include? exclude_from.downcase or exclude_from == 'all'
+          end
+        exclude_junit = SUPPORTED_ANALYZER  if exclude_junit[0] == 'all'
+        end                  
         analyzers.each do |analyzer|
           case analyzer.downcase
           when 'xcodewar'
@@ -43,8 +51,10 @@ module Fastlane
         sh "rm -rf #{clear_all_files}"
 
         # Run alyzers
+        use_junit = is_include(exclude_junit, "cpd") ? false : true
         status_cpd = Actions::CpdAnalyzerAction.run(
           result_dir: params[:result_dir],
+          use_junit_format: use_junit,
           tokens: params[:cpd_tokens],
           language: params[:cpd_language],
           cpd_files_to_inspect: params[:cpd_files_to_inspect],
@@ -53,24 +63,28 @@ module Fastlane
         analyzers.each do |analyzer|
           case analyzer.downcase
           when 'xcodewar'
+            use_junit = is_include(exclude_junit, "xcodewar") ? false : true
             if platform != "android"
               status_static = Actions::WarningAnalyzerAction.run(
                 result_dir: params[:result_dir],
                 xcode_project_name: xcode_project,
                 xcode_workspace_name: xcode_workspace,
-                xcode_targets: xcode_targets
+                xcode_targets: xcode_targets,
+                use_junit_format: use_junit
               )
             end
           when 'rubocop'
+            use_junit = is_include(exclude_junit, "rubocop") ? false : true
             status_rubocop = Actions::RubyAnalyzerAction.run(
               result_dir: params[:result_dir],
-              ruby_files: params[:ruby_files]
+              ruby_files: params[:ruby_files],
+              use_junit_format: use_junit
             )
           end
         end
         # sh "rm -rf #{clear_temp_files}"
 
-        create_analyzers_run_result("#{root_dir}#{params[:result_dir]}/") unless @xml_content.empty?
+        create_analyzers_run_result("#{root_dir}#{params[:result_dir]}/")
 
         if  Actions::CodeStaticAnalyzerAction.status_to_boolean(status_cpd) &&
             Actions::CodeStaticAnalyzerAction.status_to_boolean(status_static) &&
@@ -127,6 +141,16 @@ module Fastlane
         end
       end
 
+	  def self.is_include(list, value)
+	    if list
+	      list = list.map(&:downcase)
+	      value = value.downcase
+	      return (list.include? value) ? true : false 
+	    else
+	      return false
+	    end
+	  end
+	  
       def self.is_pmd_installed
         @checked_pmd = false
         begin
@@ -243,6 +267,11 @@ module Fastlane
                                     UI.user_error!("The analyzer '#{run_analyzer}' is not supported.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'") unless SUPPORTED_ANALYZER.map(&:downcase).include? run_analyzer.downcase or run_analyzer == 'all'
                                   end
                                 end),
+          FastlaneCore::ConfigItem.new(key: :disable_junit,
+                                env_name: "FL_CSA_DISABLED_JUNIT_RESULTS",
+                                description: "List of analysers for which you want to disable results in JUnit format.  Supported analyzers: #{SUPPORTED_ANALYZER}, 'all'",
+                                optional: true,
+                                type: Array),
           FastlaneCore::ConfigItem.new(key: :result_dir,
                               env_name: "CSA_RESULT_DIR_NAME",
                               description: "Directory's name for storing  analysis results",

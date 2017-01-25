@@ -18,10 +18,15 @@ module Fastlane
         # prepare script and metadata for saving results
         result_dir_path = "#{work_dir}#{params[:result_dir]}"
         FileUtils.mkdir_p(result_dir_path) unless File.exist?(result_dir_path)
-        temp_result_file = "#{result_dir_path}/temp_ruby.json"
         result_file = "#{result_dir_path}/codeAnalysResults_ruby.xml"
         files = Actions::CodeStaticAnalyzerAction.add_root_path(work_dir, files_to_inspect, true)
-        run_script = "bundle exec rubocop -f j -a #{files}"
+        if params[:use_junit_format]
+          temp_result_file = "#{result_dir_path}/ruby.json"
+          run_script = "bundle exec rubocop -f j -a #{files}"
+        else
+          temp_result_file = "#{result_dir_path}/ruby.log"
+          run_script = "bundle exec rubocop -a #{files}"
+        end
         run_script_path = File.join CodeStaticAnalyzer::ROOT, "assets/run_script.sh"
         run_script = "#{run_script_path} \"#{run_script}\" '#{temp_result_file}'"
         # use analyzer
@@ -40,9 +45,12 @@ module Fastlane
           status = 43
         else
           status = 0 if File.read(temp_result_file).empty?
-          xml_content = JunitParser.parse_json(temp_result_file)
-          junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
-          JunitParser.create_junit_xml(junit_xml, result_file)
+          if params[:use_junit_format]
+   		    UI.message 'Ruby analyzer generates result in JUnit format'
+            xml_content = JunitParser.parse_json(temp_result_file)
+            junit_xml = JunitParser.add_testsuite('rubocop', xml_content)
+            JunitParser.create_junit_xml(junit_xml, result_file)
+          end
         end
         Actions.lane_context[SharedValues::RUBY_ANALYZER_STATUS] = status
       end
@@ -76,7 +84,13 @@ module Fastlane
                         env_name: "FL_RUBY_ANALYZER_FILES_TO_INSPECT",
                         description: "List of path (relative to work directory) to ruby files to be inspected",
                         optional: true,
-                        type: Array)
+                        type: Array),
+          FastlaneCore::ConfigItem.new(key: :use_junit_format,
+                        env_name: "FL_RUBY_ANALYZER_USE_JUNIT_RESULTS",
+                        description: "Generate results in JUnit format.",
+                        optional: true,
+                        type: BOOL,
+                        default_value: true)
         ]
       end
 
