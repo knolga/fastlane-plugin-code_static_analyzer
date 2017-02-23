@@ -118,7 +118,6 @@ Style/AndOr:
 Metrics/ClassLength:
   Max: 320
 
-
 # Configuration parameters: AllowURI, URISchemes.
 Metrics/LineLength:
   Max: 370
@@ -198,3 +197,6 @@ Style/IfInsideElse:
 # Sometimes we just want to 'collect'
 Style/CollectionMethods:
   Enabled: false
+
+ModuleLength:
+  Max: 400

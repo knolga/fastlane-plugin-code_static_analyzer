@@ -9,13 +9,13 @@ module Fastlane
     end
 
     class CodeStaticAnalyzerAction < Action
-      SUPPORTED_ANALYZER = ["xcodeWar", "rubocop", "CPD"]
+      SUPPORTED_ANALYZER = ["xcodeWar", "rubocop", "CPD", "clang"]
       RESULT_FILE = 'codeAnalysResults_analyzers.xml'
       attr_accessor :checked_pmd, :checked_xcode_param, :xml_content, :run_main
 
       def self.run(params)
         @run_main = true
-        Actions::CodeStaticAnalyzerAction.is_pmd_installed
+        Actions::CodeStaticAnalyzerAction.is_installed('pmd','copy paste analyzer')
         platform = Actions.lane_context[SharedValues::PLATFORM_NAME].to_s
         @xml_content = ''
         root_dir = work_dir
@@ -46,6 +46,7 @@ module Fastlane
 
         status_rubocop = 0
         status_static = 0
+        status_clang = 0
         clear_all_files = "#{root_dir}#{params[:result_dir]}/*.*"
         # clear_temp_files = "#{root_dir}#{params[:result_dir]}/*temp*.*"
         sh "rm -rf #{clear_all_files}"
@@ -80,6 +81,16 @@ module Fastlane
               ruby_files: params[:ruby_files],
               use_junit_format: use_junit
             )
+          when 'clang'
+            autofix = params[:clang_autocorrect]==nil ? false : params[:clang_autocorrect]
+            status_clang = Actions::ClangAnalyzerAction.run(
+              basic_style: params[:clang_basic_style],
+              files_extention: params[:files_extention],
+              clang_dir_to_inspect: params[:clang_dir_to_inspect],
+              clang_dir_to_exclude: params[:clang_dir_to_exclude],
+              result_dir: params[:result_dir],
+              autocorrect: autofix
+            )    
           end
         end
         # sh "rm -rf #{clear_temp_files}"
@@ -88,7 +99,8 @@ module Fastlane
 
         if  Actions::CodeStaticAnalyzerAction.status_to_boolean(status_cpd) &&
             Actions::CodeStaticAnalyzerAction.status_to_boolean(status_static) &&
-            Actions::CodeStaticAnalyzerAction.status_to_boolean(status_rubocop)
+            Actions::CodeStaticAnalyzerAction.status_to_boolean(status_rubocop) &&
+            Actions::CodeStaticAnalyzerAction.status_to_boolean(status_clang)
           Actions.lane_context[SharedValues::ANALYZER_STATUS] = true
         else
           Actions.lane_context[SharedValues::ANALYZER_STATUS] = false
@@ -151,12 +163,12 @@ module Fastlane
 	    end
 	  end
 	  
-      def self.is_pmd_installed
+      def self.is_installed(command_name, for_analyzer)
         @checked_pmd = false
         begin
-         Actions.sh('type pmd')
+         Actions.sh("type #{command_name}") #pmd
        rescue
-         UI.user_error! 'PMD not installed. Please, install PMD for using copy paste analyzer.'
+         UI.user_error! "#{command_name} not installed. Please, install #{command_name} for using #{for_analyzer}."
        end
         @checked_pmd = true
       end
@@ -316,7 +328,32 @@ module Fastlane
           FastlaneCore::ConfigItem.new(key: :xcode_targets,
                                  description: "List of Xcode targets to inspect",
                                 optional: true,
-                                type: Array)
+                                type: Array),
+         # parameters for Clang analyzer-formatter
+          FastlaneCore::ConfigItem.new(key: :clang_basic_style,
+                        description: "Style ... ? ... .\nSupported styles: #{Actions::ClangAnalyzerAction::SUPPORTED_STYLE}",
+                        optional: true,
+                        type: String,
+                        verify_block: proc do |value|
+                          UI.user_error!("This style is not supported.  Supported languages: #{Actions::ClangAnalyzerAction::SUPPORTED_STYLE}") unless Actions::ClangAnalyzerAction::SUPPORTED_STYLE.map(&:downcase).include? value.downcase or value.empty? or !value
+                        end,
+                        default_value:'custom'),
+          FastlaneCore::ConfigItem.new(key: :clang_dir_to_inspect,
+                        description: "List of directories (relative to work directory) to inspect on clang styling",
+                        optional: true,
+                        type: Array),
+          FastlaneCore::ConfigItem.new(key: :clang_dir_to_exclude,
+                        description: "List of directories (relative to work directory) not to inspect on clang styling",
+                        optional: true,
+                        type: Array),
+          FastlaneCore::ConfigItem.new(key: :files_extention,
+                        description: "List of extentions of inspected files",
+                        optional: true,
+                        type: Array),
+          FastlaneCore::ConfigItem.new(key: :clang_autocorrect,
+                        description: "--?",
+                        optional: true,
+                        is_string: false)
         ]
       end
 

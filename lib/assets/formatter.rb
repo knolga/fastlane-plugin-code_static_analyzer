@@ -22,7 +22,12 @@ module Formatter
     puts 'format        : xml'
     puts "output_file   : #{result_file}"
   end
-
+  
+  def self.clang_format(file, count)
+    puts ">>>Made #{count} replacements in #{file}"
+  end
+ 
+       
   # String colorization
   # call UI.message Actions::FormatterAction.light_blue(text)
   def self.light_blue(mytext)

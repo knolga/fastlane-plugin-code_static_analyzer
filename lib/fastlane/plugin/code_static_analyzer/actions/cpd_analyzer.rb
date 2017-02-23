@@ -9,7 +9,7 @@ module Fastlane
 
       def self.run(params)
         UI.header 'CPD analyzer' if Actions::CodeStaticAnalyzerAction.run_from_main_action
-        Actions::CodeStaticAnalyzerAction.is_pmd_installed unless Actions::CodeStaticAnalyzerAction.checked_pmd
+        Actions::CodeStaticAnalyzerAction.is_installed('pmd', 'copy paste analyzer') unless Actions::CodeStaticAnalyzerAction.checked_pmd
         work_dir = Actions::CodeStaticAnalyzerAction.work_dir
         # checking files for analysing
         files_to_exclude = params[:cpd_files_to_exclude]
