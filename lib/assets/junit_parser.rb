@@ -145,7 +145,7 @@ module JunitParser
       end
       temp_testcase
     else
-      add_success_testcase(project)
+      add_success_testcase(project, '')
     end
   end
 
@@ -191,7 +191,7 @@ module JunitParser
       error_text = ''
       errors = inspected_file['offenses']
       if errors.empty?
-        xml += add_success_testcase((inspected_file['path']).to_s)
+        xml += add_success_testcase((inspected_file['path']).to_s, '')
       else
         errors.each do |error|
           error_text += construct_failure_mes(
@@ -222,7 +222,7 @@ module JunitParser
 
     if data_hash.empty? or data_hash['pmd_cpd'].nil?
       puts 'empty data_hash'
-      add_success_testcase('casino duplications')
+      add_success_testcase('casino duplications', '')
     else
       parse_code_duplications(data_hash)
     end
@@ -402,7 +402,7 @@ module JunitParser
       testcase_message = error[:message]
       case error[:status].downcase
       when 'success'
-        testcase_xml += add_success_testcase(testcase_name, testcase_err_num)
+        testcase_xml += add_success_testcase(testcase_name, testcase_err_num, '')
       when 'fail'
         if testcase_message.nil?
           failure = add_failure('', '', '')
