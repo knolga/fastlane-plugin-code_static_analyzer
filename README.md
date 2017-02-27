@@ -22,6 +22,7 @@ This plugin can be used in pair with CI static code analysis plugins. Check out 
 ## Important
 - You can configure rubocop analyzer by creating configuration file `.rubocop.yml` in your project (more about rubocop configuration http://rubocop.readthedocs.io/en/latest/cops/)
 - All paths should be relative to work directory. 
+- Clang-format tool have to be installed on your machine to use clang analyzer
 
 ### Specific for copy paste analyzer (CPD)
 - PMD have to be installed on your machine (http://pmd.sourceforge.net/snapshot/usage/installing.html)
@@ -34,6 +35,7 @@ You may run each analyzer separate:<br />
 `cpd_analyzer` - finds copy paste in code (based on CPD from PMD package) <br />
 `ruby_analyzer` - checks your ruby files. Some offenses can be auto-corrected (if you want to save the changes do it manually) <br />
 `warning_analyzer` - this analyzer uses Xcode built-in analyzer mainly to detect warnings<br /> 
+`clang_analyzer` - this analyzer uses clang-format command to check and fix your code styling<br /> 
 
 ## Reference and Example
 
@@ -58,7 +60,12 @@ code_static_analyzer(
       xcode_workspace_name: 'path/to/testWorkspace',
       xcode_targets: ['TPClientTarget','TPServerTarget'],
       ruby_files: 'fastlane/Fastfile',
-      disable_junit: 'all' # don't create any results in JUnit format
+      disable_junit: 'all', # don't create any results in JUnit format
+      autocorrect: true,
+      clang_dir_to_inspect: %w('path/to/myFiles/' 'path/to/testFiles/'),
+      clang_dir_to_exclude: %w(Pods ThirdParty Build 'path/to/otherDir'),
+      files_extention: %w(h cpp),
+      basic_style: 'custom'
     )
 ````
 Parameter | Description
@@ -74,6 +81,11 @@ Parameter | Description
 `xcode_targets` | *(optional)* List of Xcode targets to inspect. By default used all targets which are available in project
 `ruby_files` | *(optional)* List of paths to ruby files to be inspected 
 `disable_junit` | *(optional)* List of analysers for which you want to disable results in JUnit format.<br />Supported analyzers: "xcodeWar", "rubocop", "CPD", "all"<br />By default all results will be created in JUnit format.
+`autocorrect` | *(optional)* If your code will be corrected basing on clang configuration.<br />Default value: false
+`clang_dir_to_inspect` | *(optional)* List of directories which include files you want to inspect.<br />Default value: your work directory
+`clang_dir_to_exclude` | *(optional)* List of directories which include files you don't want to inspect.
+`files_extention` | *(optional)* List of file extensions you use. [!] Each extension set without point.<br />Default value:[m h]
+`basic_style` | *(optional)* Basic Code Styling you want to use.<br />Supported styles: ['LLVM', 'Google', 'Chromium', 'Mozilla', 'WebKit', 'custom']. <br />By default analyzer uses custom (.clang-format) config file or create new one based on LLVM style in your work directory.<br />If you create configuration file based on one of the clang styling ('LLVM', 'Google', 'Chromium', 'Mozilla', 'WebKit') and change even one property than don't set this parameter or use 'custom'
 
 ### `code_static_analyzer` other examples (full configuration):
 CPD:
@@ -114,6 +126,38 @@ code_static_analyzer(
       xcode_targets: ['TPClientTarget','TPServerTarget'],
     )
 ````
+
+## Clang Format
+If you need to run clang_analyzer separately (for example as build step) you may call next:
+
+````ruby
+# minimum configuration
+clang_analyzer
+
+# minimum configuration
+clang_analyzer(
+      autocorrect: true,
+      clang_dir_to_inspect: %w(Classes/UI),
+      clang_dir_to_exclude: %w(Pods ThirdParty Build),
+      files_extention: %w(m h),
+      basic_style: 'custom'
+    )
+````
+All parameters are optional and described in previous part.
+Minimum configuration means that will be checked all files with extension *.m & *.h in work directory and it subdirectories by using custom (if exists) or llvm formatting rules.
+As result we get junit formatted file with failed tests (autocorrect = false) or skipped tests (autocorrect = true, + changed files).
+Each test message include: <br />
+
+Message parts | Description
+--------- | -----------
+`Code-fragment` | fragment of code (N lines) with clang format issue +- 5 lines (before /after line with clang issue)
+`Clang-fix` | clang replacement 
+`Code-fragment-after fix` | the same lines of code as for `Code-fragment` after clang made fix.<br /> Pay attention that this part not always show the current clang fix (due to clang fix the entire file).
+
+Recommendations: don't use autocorrect currently before making build due to some fixes can cause warnings.<br />
+For example Objective C method declaration `-(void)methodName:(type1)parameter1 :(type2)method2;`
+after fix will cause warnings due to this declaration is not under Objective C code convention (it should be `-(void)methodName:(type1)parameter1 withParamTwo:(type2)method2;`)
+
 ## Using CI plugins
 
 If you want to use CI static code analysis plugins pay attention on type of file which they use. 
