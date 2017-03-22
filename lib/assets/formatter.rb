@@ -24,7 +24,7 @@ module Formatter
   end
   
   def self.clang_format(file, count)
-    puts ">>>Made #{count} replacements in #{file}"
+    puts ">>> Made #{count} replacements in #{file}"
   end
  
        

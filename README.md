@@ -134,7 +134,7 @@ If you need to run clang_analyzer separately (for example as build step) you may
 # minimum configuration
 clang_analyzer
 
-# minimum configuration
+# full configuration
 clang_analyzer(
       autocorrect: true,
       clang_dir_to_inspect: %w(Classes/UI),

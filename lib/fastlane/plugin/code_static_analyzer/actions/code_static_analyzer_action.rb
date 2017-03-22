@@ -166,10 +166,10 @@ module Fastlane
       def self.is_installed(command_name, for_analyzer)
         @checked_pmd = false
         begin
-         Actions.sh("type #{command_name}") #pmd
-       rescue
-         UI.user_error! "#{command_name} not installed. Please, install #{command_name} for using #{for_analyzer}."
-       end
+          Actions.sh("which #{command_name}") #pmd
+        rescue
+          UI.user_error! "#{command_name} not installed. Please, install #{command_name} for using #{for_analyzer}."
+        end
         @checked_pmd = true
       end
 
