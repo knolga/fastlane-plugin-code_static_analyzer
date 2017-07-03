@@ -5,7 +5,7 @@ module Fastlane
     end
 
     class CpdAnalyzerAction < Action
-      SUPPORTED_LAN = ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']
+      SUPPORTED_LAN = ['apex', 'cpp', 'cs', 'ecmascript', 'fortran', 'go', 'groovy', 'java', 'jsp', 'matlab', 'objectivec', 'perl', 'php', 'plsql', 'python', 'ruby', 'scala', 'swift', 'vf']
 
       def self.run(params)
         UI.header 'CPD analyzer' if Actions::CodeStaticAnalyzerAction.run_from_main_action
@@ -113,7 +113,7 @@ module Fastlane
                         optional: true,
                         type: String,
                         verify_block: proc do |value|
-                          UI.user_error!("This language is not supported.  Supported languages: #{SUPPORTED_LAN} or empty if you need any other language") unless SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or !value
+                          UI.user_error!("The language #{value} is not supported.  Supported languages: #{SUPPORTED_LAN} or empty if you need any other language") unless SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or !value
                         end)
         ]
       end

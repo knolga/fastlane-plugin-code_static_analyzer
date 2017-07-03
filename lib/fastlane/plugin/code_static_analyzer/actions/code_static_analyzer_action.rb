@@ -309,7 +309,7 @@ module Fastlane
                                   optional: true,
                                   type: String,
                                   verify_block: proc do |value|
-                                    UI.user_error!("Language '#{value}' is not supported.\nSupported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN} or empty if you need any other language") unless Actions::CpdAnalyzerAction::SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or !value
+                                    UI.user_error!("Language '#{value}' is not supported.\nSupported languages: #{Actions::CpdAnalyzerAction::SUPPORTED_LAN}") unless Actions::CpdAnalyzerAction::SUPPORTED_LAN.map(&:downcase).include? value.downcase or value.empty? or !value
                                   end),
           # parameters for Ruby analyzer
           FastlaneCore::ConfigItem.new(key: :ruby_files,

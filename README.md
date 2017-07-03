@@ -25,7 +25,7 @@ This plugin can be used in pair with CI static code analysis plugins. Check out 
 - Clang-format tool have to be installed on your machine to use clang analyzer
 
 ### Specific for copy paste analyzer (CPD)
-- PMD have to be installed on your machine (http://pmd.sourceforge.net/snapshot/usage/installing.html)
+- PMD (5.8.1) have to be installed on your machine (http://pmd.sourceforge.net/snapshot/usage/installing.html)
 - [!]Pay attention on language parameter: if your code language is available in supported list you have to set this parameter.
 
 ## Actions
@@ -73,7 +73,7 @@ Parameter | Description
 `analyzers` | List of analysers you want to run.  Supported analyzers: "xcodeWar", "rubocop", "CPD", "all"
 `result_dir` | *(optional)* Directory's name for storing  analysis results.
 `cpd_tokens` | *(optional)* The min number of words in code that is detected as copy paste.<br />Default value: 100
-`cpd_language` | *(optional)* Language used in files that will be inspected on copy paste.<br />Supported analyzers: ['python', 'objectivec', 'jsp', 'ecmascript', 'fortran', 'cpp', 'ruby', 'php', 'java', 'matlab', 'scala', 'plsql', 'go', 'cs']. If you need any other language just don't set this parameter. 
+`cpd_language` | *(optional)* Language used in files that will be inspected on copy paste.<br />Supported analyzers: ['apex', 'cpp', 'cs', 'ecmascript', 'fortran', 'go', 'groovy', 'java', 'jsp', 'matlab', 'objectivec', 'perl', 'php', 'plsql', 'python', 'ruby', 'scala', 'swift', 'vf']. If you need any other language just don't set this parameter. 
 `cpd_files_to_inspect` | *(optional)* List of paths (relative to work directory) to files/directories to be inspected on copy paste. 
 `cpd_files_to_exclude` | *(optional)* List of paths (relative to work directory) to files/directories not to be inspected on copy paste
 `xcode_project_name` | *(required if use warning analyzer)* Xcode project name in work directory
